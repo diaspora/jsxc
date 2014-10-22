@@ -13,7 +13,9 @@
     "lib/jquery.mCustomScrollbar.css",
     "lib/jquery.colorbox.css",
     "jsxc.css",
-    "jsxc.lib.js"
+    "jsxc.webrtc.css",
+    "jsxc.lib.js",
+    "jsxc.lib.webrtc.js"
   ],
   "moduleType": [
     "globals"
