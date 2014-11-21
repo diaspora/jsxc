@@ -5034,15 +5034,7 @@ var jsxc;
 
                // start worker
                worker.postMessage({
-                  imports: [
-                    '/javascripts/otr/salsa20.js',
-                    '/javascripts/otr/bigint.js',
-                    '/javascripts/otr/crypto.js',
-                    '/javascripts/otr/eventemitter.js',
-                    '/javascripts/otr/const.js',
-                    '/javascripts/otr/helpers.js',
-                    '/javascripts/otr/dsa.js'
-                  ],
+                  imports: [],
                   seed: BigInt.getSeed(),
                   debug: true
                });
