@@ -248,4 +248,6 @@ module.exports = function(grunt) {
 
    // before commit
    grunt.registerTask('commit', [ 'jshint', 'search:console' ]);
+
+   grunt.registerTask('css', [ 'sass', 'autoprefixer', 'csslint' ]);
 };
