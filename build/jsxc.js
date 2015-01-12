@@ -1,9 +1,9 @@
 /*! This file is concatenated for the browser. */
 
 /*!
- * jsxc v1.0.0 - 2014-11-26
+ * jsxc v1.0.0 - 2015-01-12
  * 
- * Copyright (c) 2014 Klaus Herberth <klaus@jsxc.org> <br>
+ * Copyright (c) 2015 Klaus Herberth <klaus@jsxc.org> <br>
  * Released under the MIT license
  * 
  * Please see http://www.jsxc.org/
@@ -210,10 +210,10 @@ var jsxc;
             lang = jsxc.options.defaultLang;
          }
 
-         I18next.language = (typeof Diaspora !== 'undefined' ? Diaspora.I18n.language : 'en');
          // initialize i18n translator
          $.i18n.init({
-           lng: I18next.language,
+           lng: Diaspora.I18n.language,
+           fallbackLng: 'en',
            resStore: I18next,
            // use localStorage and set expiration to a day
            useLocalStorage: true,
@@ -990,7 +990,7 @@ var jsxc;
             ue.removeClass('jsxc_oneway');
          }
 
-         var info = '<b>' + Strophe.getBareJidFromJid(data.jid) + '</b>\n';
+         var info = Strophe.getBareJidFromJid(data.jid) + '\n';
          info += jsxc.translate('%%Subscription%%: %%' + data.sub + '%%\n');
          info += jsxc.translate('%%Status%%: %%' + jsxc.CONST.STATUS[data.status] + '%%');
 
@@ -2030,16 +2030,6 @@ var jsxc;
             jsxc.gui.toggleList.call($(this));
          });
 
-         if (jsxc.storage.getUserItem('roster') === 'hidden') {
-            $('#jsxc_roster').css('right', '-200px');
-            $('#jsxc_windowList > ul').css('paddingRight', '22px');
-            $('#jsxc_toggleRoster_text').addClass('entypo chevron-thin-left');
-            $('body > .container').addClass('chat-roster-hidden');
-         } else {
-            $('#jsxc_toggleRoster_text').addClass('entypo chevron-thin-right');
-            $('body > .container').addClass('chat-roster-shown');
-         }
-
          var pres = jsxc.storage.getUserItem('presence') || 'online';
          $('#jsxc_presence > span').text($('#jsxc_presence > ul .jsxc_' + pres).text());
          jsxc.gui.updatePresence('own', pres);
@@ -2074,15 +2064,17 @@ var jsxc;
             jsxc.gui.window.open(bid);
          });
 
-         bud.find('.jsxc_rename').click(function() {
-            jsxc.gui.roster.rename(bid);
-            return false;
-         });
+         if (!data.from_diaspora) {
+           bud.find('.jsxc_rename').click(function() {
+             jsxc.gui.roster.rename(bid);
+             return false;
+           });
 
-         bud.find('.jsxc_delete').click(function() {
-            jsxc.gui.showRemoveDialog(bid);
-            return false;
-         });
+           bud.find('.jsxc_delete').click(function() {
+             jsxc.gui.showRemoveDialog(bid);
+             return false;
+           });
+         } else { bud.find('.jsxc_right').remove(); }
 
          var expandClick = function() {
             bud.trigger('extra.jsxc');
@@ -2253,41 +2245,6 @@ var jsxc;
          jsxc.storage.updateUserItem('buddy', bid, 'name', newname);
          jsxc.gui.update(bid);
       },
-
-      /**
-       * Toogle complete roster
-       *
-       * @param {Integer} d Duration in ms
-       */
-      toggle: function(d) {
-         var duration = d || 500;
-
-         var roster = $('#jsxc_roster');
-         var wl = $('#jsxc_windowList');
-
-         var roster_width = roster.innerWidth();
-         var roster_right = parseFloat($('#jsxc_roster').css('right'));
-         var state = (roster_right < 0) ? 'shown' : 'hidden';
-         var iconToDisplay = (roster_right < 0) ? 'right' : 'left';
-
-         jsxc.storage.setUserItem('roster', state);
-
-         // remove toggle icon
-         $('#jsxc_toggleRoster_text').removeClass('entypo chevron-thin-left chevron-thin-right');
-         // set class of the diaspora* container
-         $('body > .container').removeClass('chat-roster-shown chat-roster-hidden')
-                               .addClass('chat-roster-'+state);
-         roster.animate({
-            right: ((roster_width + roster_right) * -1) + 'px'
-         }, duration);
-         wl.animate({
-            right: (10 - roster_right) + 'px'
-         }, duration);
-
-         $(document).trigger('toggle.roster.jsxc', [ state, duration ]);
-         $('#jsxc_toggleRoster_text').addClass('entypo chevron-thin-' + iconToDisplay);
-      },
-
       /**
        * Shows a text with link to a login box that no connection exists.
        */
@@ -3049,9 +3006,12 @@ var jsxc;
                 </div>\
             </div>\
         </li>',
-      roster: '<div id="jsxc_roster">\
-           <ul id="jsxc_buddylist"></ul>\
-           <div class="jsxc_bottom jsxc_presence" data-bid="own">\
+      roster: '<input type="checkbox" id="jsxc_toggleRoster_text">\
+          <div id="jsxc_roster">\
+            <label id="jsxc_toggleRoster" for="jsxc_toggleRoster_text"></label>\
+            <span class="entypo"></span>\
+            <ul id="jsxc_buddylist"></ul>\
+            <div class="jsxc_bottom jsxc_presence" data-bid="own">\
               <div id="jsxc_avatar">\
                  <div class="jsxc_avatar">☺</div>\
               </div>\
@@ -3081,10 +3041,7 @@ var jsxc;
                      <!-- <li data-pres="offline" class="jsxc_offline">%%Offline%%</li> -->\
                  </ul>\
               </div>\
-           </div>\
-           <div id="jsxc_toggleRoster">\
-              <span id="jsxc_toggleRoster_text"></span>\
-           </div>\
+            </div>\
        </div>',
       windowList: '<div id="jsxc_windowList">\
                <ul></ul>\
@@ -3530,6 +3487,7 @@ var jsxc;
             var name = $(this).attr('name') || jid;
             var bid = jsxc.jidToBid(jid);
             var sub = $(this).attr('subscription');
+            var diaspora = $(this).attr('from_diaspora') || false;
 
             buddies.push(bid);
 
@@ -3540,6 +3498,7 @@ var jsxc;
                name: name,
                status: 0,
                sub: sub,
+               from_diaspora: diaspora,
                res: []
             });
 
@@ -4545,10 +4504,6 @@ var jsxc;
             jsxc.xmpp.addBuddy(n.username, n.alias);
          }*/
 
-         if (key === 'roster') {
-            jsxc.gui.roster.toggle();
-         }
-
          if (jsxc.master && key.match(new RegExp('^vcard' + jsxc.storage.SEP)) && e.newValue !== null && e.newValue.match(/^request:/)) {
 
             jsxc.xmpp.loadVcard(bid, function(stanza) {
@@ -5446,9 +5401,9 @@ var jsxc;
 }(jQuery));
 
 /*!
- * jsxc v1.0.0 - 2014-11-26
+ * jsxc v1.0.0 - 2015-01-12
  * 
- * Copyright (c) 2014 Klaus Herberth <klaus@jsxc.org> <br>
+ * Copyright (c) 2015 Klaus Herberth <klaus@jsxc.org> <br>
  * Released under the MIT license
  * 
  * Please see http://www.jsxc.org/

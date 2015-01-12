@@ -222,10 +222,10 @@
             lang = jsxc.options.defaultLang;
          }
 
-         I18next.language = (typeof Diaspora !== 'undefined' ? Diaspora.I18n.language : 'en');
          // initialize i18n translator
          $.i18n.init({
-           lng: I18next.language,
+           lng: Diaspora.I18n.language,
+           fallbackLng: 'en',
            resStore: I18next,
            // use localStorage and set expiration to a day
            useLocalStorage: true,
@@ -1002,7 +1002,7 @@
             ue.removeClass('jsxc_oneway');
          }
 
-         var info = '&lt;b>' + Strophe.getBareJidFromJid(data.jid) + '&lt;/b>\n';
+         var info = Strophe.getBareJidFromJid(data.jid) + '\n';
          info += jsxc.translate('%%Subscription%%: %%' + data.sub + '%%\n');
          info += jsxc.translate('%%Status%%: %%' + jsxc.CONST.STATUS[data.status] + '%%');
 
@@ -2042,16 +2042,6 @@
             jsxc.gui.toggleList.call($(this));
          });
 
-         if (jsxc.storage.getUserItem('roster') === 'hidden') {
-            $('#jsxc_roster').css('right', '-200px');
-            $('#jsxc_windowList > ul').css('paddingRight', '22px');
-            $('#jsxc_toggleRoster_text').addClass('entypo chevron-thin-left');
-            $('body > .container').addClass('chat-roster-hidden');
-         } else {
-            $('#jsxc_toggleRoster_text').addClass('entypo chevron-thin-right');
-            $('body > .container').addClass('chat-roster-shown');
-         }
-
          var pres = jsxc.storage.getUserItem('presence') || 'online';
          $('#jsxc_presence > span').text($('#jsxc_presence > ul .jsxc_' + pres).text());
          jsxc.gui.updatePresence('own', pres);
@@ -2086,15 +2076,17 @@
             jsxc.gui.window.open(bid);
          });
 
-         bud.find('.jsxc_rename').click(function() {
-            jsxc.gui.roster.rename(bid);
-            return false;
-         });
+         if (!data.from_diaspora) {
+           bud.find('.jsxc_rename').click(function() {
+             jsxc.gui.roster.rename(bid);
+             return false;
+           });
 
-         bud.find('.jsxc_delete').click(function() {
-            jsxc.gui.showRemoveDialog(bid);
-            return false;
-         });
+           bud.find('.jsxc_delete').click(function() {
+             jsxc.gui.showRemoveDialog(bid);
+             return false;
+           });
+         } else { bud.find('.jsxc_right').remove(); }
 
          var expandClick = function() {
             bud.trigger('extra.jsxc');
@@ -2265,41 +2257,6 @@
          jsxc.storage.updateUserItem('buddy', bid, 'name', newname);
          jsxc.gui.update(bid);
       },
-
-      /**
-       * Toogle complete roster
-       *
-       * @param {Integer} d Duration in ms
-       */
-      toggle: function(d) {
-         var duration = d || 500;
-
-         var roster = $('#jsxc_roster');
-         var wl = $('#jsxc_windowList');
-
-         var roster_width = roster.innerWidth();
-         var roster_right = parseFloat($('#jsxc_roster').css('right'));
-         var state = (roster_right &lt; 0) ? 'shown' : 'hidden';
-         var iconToDisplay = (roster_right &lt; 0) ? 'right' : 'left';
-
-         jsxc.storage.setUserItem('roster', state);
-
-         // remove toggle icon
-         $('#jsxc_toggleRoster_text').removeClass('entypo chevron-thin-left chevron-thin-right');
-         // set class of the diaspora* container
-         $('body > .container').removeClass('chat-roster-shown chat-roster-hidden')
-                               .addClass('chat-roster-'+state);
-         roster.animate({
-            right: ((roster_width + roster_right) * -1) + 'px'
-         }, duration);
-         wl.animate({
-            right: (10 - roster_right) + 'px'
-         }, duration);
-
-         $(document).trigger('toggle.roster.jsxc', [ state, duration ]);
-         $('#jsxc_toggleRoster_text').addClass('entypo chevron-thin-' + iconToDisplay);
-      },
-
       /**
        * Shows a text with link to a login box that no connection exists.
        */
@@ -3061,9 +3018,12 @@
                 &lt;/div>\
             &lt;/div>\
         &lt;/li>',
-      roster: '&lt;div id="jsxc_roster">\
-           &lt;ul id="jsxc_buddylist">&lt;/ul>\
-           &lt;div class="jsxc_bottom jsxc_presence" data-bid="own">\
+      roster: '&lt;input type="checkbox" id="jsxc_toggleRoster_text">\
+          &lt;div id="jsxc_roster">\
+            &lt;label id="jsxc_toggleRoster" for="jsxc_toggleRoster_text">&lt;/label>\
+            &lt;span class="entypo">&lt;/span>\
+            &lt;ul id="jsxc_buddylist">&lt;/ul>\
+            &lt;div class="jsxc_bottom jsxc_presence" data-bid="own">\
               &lt;div id="jsxc_avatar">\
                  &lt;div class="jsxc_avatar">☺&lt;/div>\
               &lt;/div>\
@@ -3093,10 +3053,7 @@
                      &lt;!-- &lt;li data-pres="offline" class="jsxc_offline">%%Offline%%&lt;/li> -->\
                  &lt;/ul>\
               &lt;/div>\
-           &lt;/div>\
-           &lt;div id="jsxc_toggleRoster">\
-              &lt;span id="jsxc_toggleRoster_text">&lt;/span>\
-           &lt;/div>\
+            &lt;/div>\
        &lt;/div>',
       windowList: '&lt;div id="jsxc_windowList">\
                &lt;ul>&lt;/ul>\
@@ -3542,6 +3499,7 @@
             var name = $(this).attr('name') || jid;
             var bid = jsxc.jidToBid(jid);
             var sub = $(this).attr('subscription');
+            var diaspora = $(this).attr('from_diaspora') || false;
 
             buddies.push(bid);
 
@@ -3552,6 +3510,7 @@
                name: name,
                status: 0,
                sub: sub,
+               from_diaspora: diaspora,
                res: []
             });
 
@@ -4557,10 +4516,6 @@
             jsxc.xmpp.addBuddy(n.username, n.alias);
          }*/
 
-         if (key === 'roster') {
-            jsxc.gui.roster.toggle();
-         }
-
          if (jsxc.master && key.match(new RegExp('^vcard' + jsxc.storage.SEP)) && e.newValue !== null && e.newValue.match(/^request:/)) {
 
             jsxc.xmpp.loadVcard(bid, function(stanza) {
@@ -5472,7 +5427,7 @@
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Wed Nov 26 2014 19:00:40 GMT+0100 (CET)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Mon Jan 12 2015 19:20:49 GMT+0100 (CET)
 </footer>
 
 <script> prettyPrint(); </script>

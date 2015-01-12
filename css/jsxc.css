@@ -162,8 +162,7 @@
       height: 0;
       display: inline-block;
       opacity: 0;
-      -webkit-transition: width 0.5s, opacity 0.5s;
-              transition: width 0.5s, opacity 0.5s; }
+      transition: width 0.5s, opacity 0.5s; }
     #jsxc_buddylist li.jsxc_unreadMsg .jsxc_name:before {
       width: 12px;
       height: 12px;
@@ -171,8 +170,7 @@
       background-color: #ffa500;
       margin-right: 3px;
       opacity: 1;
-      -webkit-transition: width 0.5s, opacity 0.5s;
-              transition: width 0.5s, opacity 0.5s; }
+      transition: width 0.5s, opacity 0.5s; }
   #jsxc_buddylist .jsxc_name {
     padding-right: 30px; }
   #jsxc_buddylist .jsxc_oneway {
@@ -232,8 +230,8 @@
   z-index: 80;
   margin-left: 10px;
   background-color: #383C43;
-  -webkit-transition: -webkit-transform 0.3s;
-          transition: transform 0.3s;
+  transition: -webkit-transform 0.3s;
+  transition: transform 0.3s;
   -webkit-transform: translate3d(200px, 0, 0);
           transform: translate3d(200px, 0, 0); }
   #jsxc_roster a {
@@ -485,8 +483,8 @@
     color: #c1c1c1;
     background-color: rgba(150, 150, 150, 0.5);
     opacity: 0.6;
-    -webkit-transition: -webkit-transform 0.5s;
-            transition: transform 0.5s; }
+    transition: -webkit-transform 0.5s;
+    transition: transform 0.5s; }
   #jsxc_buddylist .jsxc_control:hover:after {
     color: #fff;
     opacity: 1; }
@@ -542,8 +540,7 @@
   height: 30px;
   overflow: visible;
   white-space: nowrap;
-  -webkit-transition: right 0.5s;
-          transition: right 0.5s; }
+  transition: right 0.5s; }
 
 #jsxc_windowList > ul > li {
   padding: 0;
@@ -683,7 +680,6 @@
     right: 0;
     height: 15px;
     z-index: 100;
-    background: -webkit-linear-gradient(top, #a4a4a4 0, rgba(40, 35, 35, 0) 100%);
     background: linear-gradient(to bottom, #a4a4a4 0, rgba(40, 35, 35, 0) 100%);
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#a4a4a4', endColorstr='#00282323', GradientType=0); }
   .jsxc_window .jsxc_avatar {
@@ -750,7 +746,6 @@
     right: 0;
     height: 15px;
     z-index: 100;
-    background: -webkit-linear-gradient(top, #a4a4a4 0, rgba(40, 35, 35, 0) 100%);
     background: linear-gradient(to bottom, #a4a4a4 0, rgba(40, 35, 35, 0) 100%);
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#a4a4a4', endColorstr='#00282323', GradientType=0); }
 
