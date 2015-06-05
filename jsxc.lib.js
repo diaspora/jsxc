@@ -258,7 +258,7 @@ var jsxc;
 
          var lastActivity = jsxc.storage.getItem('lastActivity') || 0;
 
-         if ((new Date()).getTime() - lastActivity < jsxc.options.loginTimeout) {
+         if ((new Date()).getTime() - lastActivity > jsxc.options.loginTimeout) {
             jsxc.restore = true;
          }
 
