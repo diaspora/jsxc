@@ -3225,8 +3225,7 @@ var jsxc;
       rosterBuddy: '<li>\
             <div class="jsxc_avatar">☺</div>\
             <div class="jsxc_control"></div>\
-            <div class="jsxc_restore">■</div>\
-            <div id="jsxc_window_name" nameclass="jsxc_name"/>\
+            <div class="jsxc_name"/>\
             <div class="jsxc_options jsxc_right">\
                 <div class="jsxc_rename" title="%%rename_buddy%%">✎</div>\
                 <div class="jsxc_delete" title="%%delete_buddy%%">✘</div>\
