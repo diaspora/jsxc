@@ -2255,6 +2255,9 @@ var jsxc;
 
                return false;
             }
+            if ($(this).data('name').toLowerCase() === data.name.toLowerCase()) {
+               insert = true;
+            }
          });
 
          if (!insert) {
