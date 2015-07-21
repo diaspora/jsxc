@@ -1,57 +1,32 @@
 {
-  "name": "diaspora_jsxc",
-  "version": "0.1.1",
-  "homepage": "https://github.com/diaspora/jsxc",
-  "description": "XMPP javascript client for diaspora",
-  "main": [
-    "build/lib/strophe.js",
-    "build/lib/strophe.disco.js",
-    "build/lib/strophe.caps.js",
-    "build/lib/strophe.muc.js",
-    "build/lib/strophe.vcard.js",
-    "lib/jquery-ui.min.css",
-    "lib/jquery.mCustomScrollbar.css",
-    "lib/jquery.colorbox.css",
-    "build/lib/jquery.colorbox-min.js",
-    "build/lib/jquery.slimscroll.js",
-    "build/lib/jquery.fullscreen.js",
-    "build/css/jsxc.css",
-    "build/css/jsxc.webrtc.css",
-    "build/lib/jsxc.dep.min.js",
-    "build/jsxc.min.js"
+  "name": "jsxc",
+  "version": "2.0.1",
+  "homepage": "https://www.jsxc.org",
+  "authors": [
+    "sualko <klaus@jsxc.org>"
   ],
-  "moduleType": [
-    "globals"
-  ],
+  "description": "Real-time chat app",
   "keywords": [
+    "javascript",
     "xmpp",
+    "webrtc",
+    "otr",
     "chat",
-    "client",
-    "diaspora"
+    "realtime"
   ],
   "license": "MIT",
   "ignore": [
     "**/.*",
-    "jsxc.*",
-    "locales/",
-    "build/lib/otr/",
-    "build/lib/strophe.jingle/",
-    "example/",
-    "lib/*.js",
-    "lib/otr/",
-    "lib/strophe.jingle/",
-    "img/",
-    "doc/",
     "node_modules",
     "bower_components",
+    "lib/",
     "test",
     "tests"
   ],
+  "private": true,
   "dependencies": {
-    "jquery": "~1.11.1",
-    "jquery-ui": "~1.10.4",
-    "jquery-colorbox": "~1.5.14",
-    "jquery.slimscroll": "~1.3.3",
-    "jquery-fullscreen": "~1.1.4"
+    "favico.js": "~0.3.7",
+    "strophe.bookmarks": "https://raw.githubusercontent.com/sualko/strophejs-plugins/bookmarks/bookmarks/strophe.bookmarks.js",
+    "strophe.x": "https://raw.githubusercontent.com/strophe/strophejs-plugins/master/dataforms/src/strophe.x.js"
   }
 }
