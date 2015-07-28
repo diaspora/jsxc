@@ -109,12 +109,6 @@ module.exports = function(grunt) {
             dest: '<%= target %>/lib/translation.js'
          }
       },
-      merge_data: {
-        target: {
-          src: ['locales/*.{json,y{,a}ml}'],
-          dest: 'build/lib/translation.json'
-        }
-      },
       concat: {
          dep: {
             options: {
