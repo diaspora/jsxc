@@ -1957,7 +1957,7 @@ jsxc.gui.window = {
 
       win.find('.jsxc_name').disableSelection();
 
-      win.find('.slimScrollDiv').resizable({
+      /*win.find('.slimScrollDiv').resizable({
          handles: 'w, nw, n',
          minHeight: 234,
          minWidth: 250,
@@ -1971,7 +1971,7 @@ jsxc.gui.window = {
 
             $(document).trigger('resize.window.jsxc', [win, bid, ui.size]);
          }
-      });
+      });*/
 
       if ($.inArray(bid, jsxc.storage.getUserItem('windowlist')) < 0) {
 
@@ -2193,9 +2193,9 @@ jsxc.gui.window = {
       var el = jsxc.gui.window.get(bid).find(' .jsxc_bar');
 
       if (!el.is(':animated')) {
-         el.effect('highlight', {
+         /*el.effect('highlight', {
             color: 'orange'
-         }, 2000);
+         }, 2000);*/
       }
    },
 

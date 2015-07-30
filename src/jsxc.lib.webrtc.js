@@ -574,7 +574,7 @@ jsxc.webrtc = {
 
       var win = $('#jsxc_dialog .jsxc_chatarea > ul > li');
       $('#jsxc_windowList > ul').prepend(win.detach());
-      win.find('.slimScrollDiv').resizable('enable');
+      //win.find('.slimScrollDiv').resizable('enable');
 
       $(document).off('cleanup.dialog.jsxc');
       $(document).off('error.jingle');
@@ -909,7 +909,7 @@ jsxc.gui.showVideoWindow = function(jid) {
 
       var win = jsxc.gui.window.open(jsxc.jidToBid(jid));
 
-      win.find('.slimScrollDiv').resizable('disable');
+      //win.find('.slimScrollDiv').resizable('disable');
       win.find('.jsxc_textarea').slimScroll({
          height: 413
       });
