@@ -1147,7 +1147,10 @@ jsxc.gui = {
          jsxc.storage.setUserItem('presence', pres);
       }
 
-      if (jsxc.master) {
+      if (pres !== 'offline' &&
+          (jsxc.xmpp.conn === undefined || jsxc.xmpp.conn === null)) {
+        jsxc.xmpp.login();
+      } else if (jsxc.master) {
          jsxc.xmpp.sendPres();
       }
 
@@ -1440,7 +1443,7 @@ jsxc.gui.roster = {
       });
 
       $('#jsxc_roster .jsxc_onlineHelp').click(function() {
-         window.open("http://www.jsxc.org/manual.html", "onlineHelp");
+         window.open("/help/chat", "onlineHelp");
       });
 
       $('#jsxc_roster .jsxc_about').click(function() {
@@ -1455,10 +1458,9 @@ jsxc.gui.roster = {
          var self = $(this);
          var pres = self.data('pres');
 
+         jsxc.gui.changePresence(pres);
          if (pres === 'offline') {
             jsxc.xmpp.logout(false);
-         } else {
-            jsxc.gui.changePresence(pres);
          }
       });
 
@@ -1483,7 +1485,7 @@ jsxc.gui.roster = {
          $('#jsxc_windowList').css('right', '10px');
       }
 
-      var pres = jsxc.storage.getUserItem('presence') || 'online';
+      var pres = jsxc.storage.getUserItem('presence') || 'offline';
       $('#jsxc_presence > span').text($('#jsxc_presence > ul .jsxc_' + pres).text());
       jsxc.gui.updatePresence('own', pres);
 
@@ -1744,7 +1746,7 @@ jsxc.gui.roster = {
       $('#jsxc_buddylist').empty();
 
       $('#jsxc_roster').append($('<p>' + $.t('no_connection') + '</p>').append(' <a>' + $.t('relogin') + '</a>').click(function() {
-         jsxc.gui.showLoginBox();
+         jsxc.gui.changePresence('online');
       }));
    },
 
