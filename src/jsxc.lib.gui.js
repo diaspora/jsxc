@@ -1718,6 +1718,11 @@ jsxc.gui.roster = {
 
       jsxc.storage.setUserItem('roster', state);
 
+      // set class of diaspora* container
+      $('body > .container-fluid')
+        .removeClass('chat-roster-shown chat-roster-hidden')
+        .addClass('chat-roster-'+state);
+
       roster.removeClass('jsxc_state_hidden jsxc_state_shown').addClass('jsxc_state_' + state);
 
       roster.animate({
