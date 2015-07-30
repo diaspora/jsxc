@@ -7,5 +7,12 @@ build/lib/otr/
 build/lib/strophe.jingle/
 bower_components
 archives/
-css/
 .idea**
+/css/
+dev/
+.wti
+*~
+/tmp/
+lib/favico.js/
+lib/strophe.bookmarks/
+lib/strophe.x/

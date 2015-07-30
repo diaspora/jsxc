@@ -1,82 +1,104 @@
 [
   {
-     "file": "build/lib/strophe.js",
+     "name": "strophe.js",
+     "file": "lib/strophe.js",
      "license": "multiple",
      "url": "http://strophe.im/strophejs/"
   },
   {
-     "file": "build/lib/strophe.muc.js",
+     "name": "strophe.js/muc",
+     "file": "lib/strophe.muc.js",
      "license": "MIT",
      "url": "https://github.com/strophe/strophejs-plugins"
   },
   {
-     "file": "build/lib/strophe.disco.js",
+     "name": "strophe.js/disco",
+     "file": "lib/strophe.disco.js",
      "license": "MIT",
      "url": "https://github.com/strophe/strophejs-plugins"
   },
   {
-     "file": "build/lib/strophe.caps.js",
+     "name": "strophe.js/caps",
+     "file": "lib/strophe.caps.js",
      "license": "MIT",
      "url": "https://github.com/strophe/strophejs-plugins"
   },
   {
-     "file": "build/lib/strophe.vcard.js",
+     "name": "strophe.js/vcard",
+     "file": "lib/strophe.vcard.js",
      "license": "MIT",
      "url": "https://github.com/strophe/strophejs-plugins"
   },
   {
-     "file": "build/lib/strophe.jingle/strophe.jingle.js",
+     "name": "strophe.js/bookmarks",
+     "file": "lib/strophe.bookmarks/index.js",
      "license": "MIT",
-     "url": "https://github.com/ESTOS/strophe.jingle"
+     "url": "https://github.com/strophe/strophejs-plugins/tree/master/bookmarks"
   },
   {
-     "file": "build/lib/strophe.jingle/strophe.jingle.session.js",
+     "name": "strophe.js/x",
+     "file": "lib/strophe.x/index.js",
      "license": "MIT",
-     "url": "https://github.com/ESTOS/strophe.jingle"
+     "url": "https://github.com/strophe/strophejs-plugins/tree/master/dataforms"
   },
   {
-     "file": "build/lib/strophe.jingle/strophe.jingle.sdp.js",
+     "name": "strophe.jinglejs",
+     "file": "lib/strophe.jinglejs/strophe.jinglejs-bundle.js",
      "license": "MIT",
-     "url": "https://github.com/ESTOS/strophe.jingle"
+     "url": "https://github.com/sualko/strophe.jinglejs"
   },
   {
-     "file": "build/lib/strophe.jingle/strophe.jingle.adapter.js",
-     "license": "MIT",
-     "url": "https://github.com/ESTOS/strophe.jingle"
-  },
-  {
-     "file": "build/lib/otr/build/dep/salsa20.js",
+     "name": "Salsa20",
+     "file": "lib/otr/build/dep/salsa20.js",
      "license": "AGPL3",
      "url": "https://github.com/neoatlantis/node-salsa20"
   },
   {
-     "file": "build/lib/otr/build/dep/bigint.js",
+     "name": "bigint",
+     "file": "lib/otr/build/dep/bigint.js",
      "license": "public domain",
      "url": "www.leemon.com"
   },
   {
-     "file": "build/lib/otr/build/dep/crypto.js",
+     "name": "cryptojs",
+     "file": "lib/otr/build/dep/crypto.js",
      "license": "code.google.com/p/crypto-js/wiki/license",
      "url": "code.google.com/p/crypto-js"
   },
   {
-     "file": "build/lib/otr/build/dep/eventemitter.js",
+     "name": "eventemitter",
+     "file": "lib/otr/build/dep/eventemitter.js",
      "license": "MIT",
      "url": "http://git.io/ee"
   },
   {
-     "file": "build/lib/otr/build/otr.js",
+     "name": "otr.js",
+     "file": "lib/otr/build/otr.js",
      "license": "MPL v2.0",
      "url": "https://arlolra.github.io/otr/"
   },
   {
-     "file": "build/lib/i18next/release/i18next-latest.min.js",
+     "name": "i18next",
+     "file": "lib/i18next/release/i18next-latest.min.js",
      "license": "MIT",
      "url": "http://i18next.com/"
   },
   {
-    "file": "build/lib/translation.json",
-    "license": "MIT",
-    "url": "https://webtranslateit.com/en/projects/10365-JSXC"
+     "name": "Magnific Popup",
+     "file": "lib/magnific-popup/dist/jquery.magnific-popup.min.js",
+     "license": "MIT",
+     "url": "http://dimsemenov.com/plugins/magnific-popup/"
+  },
+  {
+     "name": null,
+     "file": "lib/translation.js",
+     "license": "MIT",
+     "url": "https://webtranslateit.com/en/projects/10365-JSXC"
+  },
+  {
+     "name": "favico.js",
+     "file": "lib/favico.js/favico.js",
+     "license": "MIT",
+     "url": "https://github.com/ejci/favico.js"
   }
  ]

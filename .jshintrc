@@ -23,6 +23,7 @@
       "Worker":true, 
       "BigInt":true, 
       "Notification":true, 
+      "$": true,
       "jQuery":true, 
       "Strophe":true, 
       "localStorage":true, 
@@ -33,6 +34,7 @@
       "jsxc":true,
       "getUserMediaWithConstraints":true,
       "setupRTC":true,
-      "SDPUtil":true
+      "SDPUtil":true,
+      "getSelection":true
    }
 }

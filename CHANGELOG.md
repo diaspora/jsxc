@@ -1,3 +1,40 @@
+v2.0.1 / 2015-05-23
+===
+- improve login box
+- fix browsers without CSPRNG generator
+- fix ajax login after credential failure
+- fix some webrtc issues
+- fix login with different username after dirty logout
+- remove ie (<11) gradient
+- remove broken mitm detection
+- fix temporary template 404
+- fix login option
+- add connecting event
+
+v2.0.0 / 2015-05-08
+===
+- add multi-user chat (XEP-0045)
+- add window resize handle
+- add username autocomplete
+- add offline state
+- add Italian, French, Polish, Portuguese/Brazil
+- use user avatar as notification icon
+- show notifications if tabs has no focus
+- split files into namespaces
+- sass improvements
+- replace own translation engine with i18next
+- fix login from login box
+- fix selection of chat messages
+- fix video calls
+- fix emoticons
+- fix duplicated roster items
+- fix notification request
+- fix logout
+
+v1.1.0a / 2015-02-25
+===
+- fix css url path
+
 v1.1.0 / 2015-01-08
 ===
 - move from plain css to sass
