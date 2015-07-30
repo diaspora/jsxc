@@ -1,6 +1,6 @@
 /*!
 
-  otr.js v0.2.15 - 2015-05-04
+  otr.js v0.2.14 - 2015-01-16
   (c) 2015 - Arlo Breault <arlolra@gmail.com>
   Freely distributed under the MPL v2.0 license.
 
@@ -29,9 +29,7 @@
   } else {
     root.OTR = {}
     root.DSA = {}
-    if (typeof root.BigInt !== 'undefined') {
-       factory.call(root)
-    }
+    factory.call(root)
   }
 
 }(this, function () {
@@ -2120,12 +2118,8 @@
   OTR.prototype.io = function (msg, meta) {
 
     // buffer
-    msg = ([].concat(msg)).map(function(m, i, arr) {
-       var obj = { msg: m }
-       if (!(meta instanceof OTRCB) ||
-         i === (arr.length - 1)  // only cb after last fragment is sent
-       ) obj.meta = meta
-       return obj
+    msg = ([].concat(msg)).map(function(m){
+       return { msg: m, meta: meta }
     })
     this.outgoing = this.outgoing.concat(msg)
 
@@ -2614,9 +2608,7 @@
         if (this.smw) this.sm.worker.terminate()  // destroy webworker
         this.sm = null
       }
-    } else if (typeof cb === 'function')
-      setTimeout(cb, 0)
-
+    }
     this.msgstate = CONST.MSGSTATE_PLAINTEXT
     this.receivedPlaintext = false
     this.trigger('status', [CONST.STATUS_END_OTR])

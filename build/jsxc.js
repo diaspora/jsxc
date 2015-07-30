@@ -1,5 +1,5 @@
 /*!
- * jsxc v2.1.0-beta1 - 2015-07-21
+ * jsxc v2.1.0-beta1 - 2015-07-30
  * 
  * Copyright (c) 2015 Klaus Herberth <klaus@jsxc.org> <br>
  * Released under the MIT license
@@ -1238,7 +1238,7 @@ jsxc.xmpp = {
          pres.c('c', jsxc.xmpp.conn.caps.generateCapsAttrs()).up();
       }
 
-      var presState = jsxc.storage.getUserItem('presence') || 'online';
+      var presState = jsxc.storage.getUserItem('presence') || 'offline';
       if (presState !== 'online') {
          pres.c('show').t(presState).up();
       }
@@ -3155,7 +3155,10 @@ jsxc.gui = {
          jsxc.storage.setUserItem('presence', pres);
       }
 
-      if (jsxc.master) {
+      if (pres !== 'offline' &&
+          (jsxc.xmpp.conn === undefined || jsxc.xmpp.conn === null)) {
+        jsxc.xmpp.login();
+      } else if (jsxc.master) {
          jsxc.xmpp.sendPres();
       }
 
@@ -3448,7 +3451,7 @@ jsxc.gui.roster = {
       });
 
       $('#jsxc_roster .jsxc_onlineHelp').click(function() {
-         window.open("http://www.jsxc.org/manual.html", "onlineHelp");
+         window.open("/help/chat", "onlineHelp");
       });
 
       $('#jsxc_roster .jsxc_about').click(function() {
@@ -3463,10 +3466,9 @@ jsxc.gui.roster = {
          var self = $(this);
          var pres = self.data('pres');
 
+         jsxc.gui.changePresence(pres);
          if (pres === 'offline') {
             jsxc.xmpp.logout(false);
-         } else {
-            jsxc.gui.changePresence(pres);
          }
       });
 
@@ -3491,7 +3493,7 @@ jsxc.gui.roster = {
          $('#jsxc_windowList').css('right', '10px');
       }
 
-      var pres = jsxc.storage.getUserItem('presence') || 'online';
+      var pres = jsxc.storage.getUserItem('presence') || 'offline';
       $('#jsxc_presence > span').text($('#jsxc_presence > ul .jsxc_' + pres).text());
       jsxc.gui.updatePresence('own', pres);
 
@@ -3726,6 +3728,11 @@ jsxc.gui.roster = {
 
       jsxc.storage.setUserItem('roster', state);
 
+      // set class of diaspora* container
+      $('body > .container-fluid')
+        .removeClass('chat-roster-shown chat-roster-hidden')
+        .addClass('chat-roster-'+state);
+
       roster.removeClass('jsxc_state_hidden jsxc_state_shown').addClass('jsxc_state_' + state);
 
       roster.animate({
@@ -3747,7 +3754,7 @@ jsxc.gui.roster = {
       $('#jsxc_buddylist').empty();
 
       $('#jsxc_roster').append($('<p>' + $.t('no_connection') + '</p>').append(' <a>' + $.t('relogin') + '</a>').click(function() {
-         jsxc.gui.showLoginBox();
+         jsxc.gui.changePresence('online');
       }));
    },
 
@@ -3965,7 +3972,7 @@ jsxc.gui.window = {
 
       win.find('.jsxc_name').disableSelection();
 
-      win.find('.slimScrollDiv').resizable({
+      /*win.find('.slimScrollDiv').resizable({
          handles: 'w, nw, n',
          minHeight: 234,
          minWidth: 250,
@@ -3979,7 +3986,7 @@ jsxc.gui.window = {
 
             $(document).trigger('resize.window.jsxc', [win, bid, ui.size]);
          }
-      });
+      });*/
 
       if ($.inArray(bid, jsxc.storage.getUserItem('windowlist')) < 0) {
 
@@ -4201,9 +4208,9 @@ jsxc.gui.window = {
       var el = jsxc.gui.window.get(bid).find(' .jsxc_bar');
 
       if (!el.is(':animated')) {
-         el.effect('highlight', {
+         /*el.effect('highlight', {
             color: 'orange'
-         }, 2000);
+         }, 2000);*/
       }
    },
 
@@ -8259,7 +8266,7 @@ jsxc.webrtc = {
 
       var win = $('#jsxc_dialog .jsxc_chatarea > ul > li');
       $('#jsxc_windowList > ul').prepend(win.detach());
-      win.find('.slimScrollDiv').resizable('enable');
+      //win.find('.slimScrollDiv').resizable('enable');
 
       $(document).off('cleanup.dialog.jsxc');
       $(document).off('error.jingle');
@@ -8594,7 +8601,7 @@ jsxc.gui.showVideoWindow = function(jid) {
 
       var win = jsxc.gui.window.open(jsxc.jidToBid(jid));
 
-      win.find('.slimScrollDiv').resizable('disable');
+      //win.find('.slimScrollDiv').resizable('disable');
       win.find('.jsxc_textarea').slimScroll({
          height: 413
       });
@@ -9363,9 +9370,9 @@ jsxc.gui.template['roster'] = '<div id="jsxc_roster">\n' +
 '      <div id="jsxc_menu">\n' +
 '         <span></span>\n' +
 '         <ul>\n' +
-'            <li class="jsxc_settings" data-i18n="Settings"></li>\n' +
+'            <!--<li class="jsxc_settings" data-i18n="Settings"></li>-->\n' +
 '            <li class="jsxc_muteNotification" data-i18n="Mute"></li>\n' +
-'            <li class="jsxc_addBuddy" data-i18n="Add_buddy"></li>\n' +
+'            <!--<li class="jsxc_addBuddy" data-i18n="Add_buddy"></li>-->\n' +
 '            <li class="jsxc_hideOffline" data-i18n="Hide_offline"></li>\n' +
 '            <li class="jsxc_onlineHelp" data-i18n="Online_help"></li>\n' +
 '            <li class="jsxc_about" data-i18n="About"></li>\n' +
@@ -9376,7 +9383,7 @@ jsxc.gui.template['roster'] = '<div id="jsxc_roster">\n' +
 '         <ul></ul>\n' +
 '      </div>\n' +
 '      <div id="jsxc_presence">\n' +
-'         <span data-i18n="Online"></span>\n' +
+'         <span data-i18n="Offline"></span>\n' +
 '         <ul>\n' +
 '            <li data-pres="online" class="jsxc_online" data-i18n="Online"></li>\n' +
 '            <li data-pres="chat" class="jsxc_chat" data-i18n="Chatty"></li>\n' +
@@ -9397,8 +9404,8 @@ jsxc.gui.template['rosterBuddy'] = '<li>\n' +
 '   <div class="jsxc_unread" />\n' +
 '   <div class="jsxc_name" />\n' +
 '   <div class="jsxc_options jsxc_right">\n' +
-'      <div class="jsxc_rename" data-i18n="[title]rename_buddy">✎</div>\n' +
-'      <div class="jsxc_delete" data-i18n="[title]delete_buddy">✘</div>\n' +
+'      <!--<div class="jsxc_rename" data-i18n="[title]rename_buddy">✎</div>\n' +
+'      <div class="jsxc_delete" data-i18n="[title]delete_buddy">✘</div>-->\n' +
 '   </div>\n' +
 '   <div class="jsxc_options jsxc_left">\n' +
 '      <div class="jsxc_chaticon" data-i18n="[title]send_message" />\n' +
