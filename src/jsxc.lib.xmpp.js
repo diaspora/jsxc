@@ -378,7 +378,7 @@ jsxc.xmpp = {
          pres.c('c', jsxc.xmpp.conn.caps.generateCapsAttrs()).up();
       }
 
-      var presState = jsxc.storage.getUserItem('presence') || 'online';
+      var presState = jsxc.storage.getUserItem('presence') || 'offline';
       if (presState !== 'online') {
          pres.c('show').t(presState).up();
       }
