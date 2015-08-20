@@ -1741,6 +1741,8 @@ jsxc.gui.roster = {
     * Shows a text with link to a login box that no connection exists.
     */
    noConnection: function() {
+      if ($('#jsxc_roster').hasClass('jsxc_noConnection')) { return; }
+
       $('#jsxc_roster').addClass('jsxc_noConnection');
 
       $('#jsxc_buddylist').empty();
