@@ -1486,6 +1486,12 @@ jsxc.gui.roster = {
       }
 
       var pres = jsxc.storage.getUserItem('presence') || 'offline';
+      // If there is no established connection
+      // we have to reset old localStorage data
+      if (jsxc.xmpp.conn === null) {
+        pres = 'offline';
+        jsxc.storage.setUserItem('presence', pres);
+      }
       $('#jsxc_presence > span').text($('#jsxc_presence > ul .jsxc_' + pres).text());
       jsxc.gui.updatePresence('own', pres);
 
