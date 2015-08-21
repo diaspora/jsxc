@@ -1480,9 +1480,14 @@ jsxc.gui.roster = {
 
       $('#jsxc_roster').addClass('jsxc_state_' + rosterState);
 
+      // set class of diaspora* container
+      $('body > .container-fluid')
+        .removeClass('chat-roster-shown chat-roster-hidden')
+        .addClass('chat-roster-'+rosterState);
+
       if (rosterState === 'hidden') {
          $('#jsxc_roster').css('right', -1 * $('#jsxc_roster').innerWidth() + 'px');
-         $('#jsxc_windowList').css('right', '10px');
+         $('#jsxc_windowList').css('right', '30px');
       }
 
       var pres = jsxc.storage.getUserItem('presence') || 'offline';
@@ -1731,7 +1736,7 @@ jsxc.gui.roster = {
          right: ((roster_width + roster_right) * -1) + 'px'
       }, duration);
       wl.animate({
-         right: (10 - roster_right) + 'px'
+         right: (30 - roster_right) + 'px'
       }, duration);
 
       $(document).trigger('toggle.roster.jsxc', [state, duration]);
