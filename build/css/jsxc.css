@@ -2288,10 +2288,9 @@ div.jsxc_transfer, div.jsxc_transfer.jsxc_disabled:hover {
 
 #jsxc_roster {
   position: fixed;
-  top: 50px;
+  top: 40px;
   bottom: 0;
   right: 0;
-  width: 220px;
   overflow: visible;
   border-left: 24px solid #999999;
   z-index: 80;
@@ -2372,7 +2371,7 @@ div.jsxc_transfer, div.jsxc_transfer.jsxc_disabled:hover {
     display: block;
     width: 0;
     top: 50%;
-    right: 0px;
+    right: 10px;
     border-style: solid;
     border-width: 6px 4px 6px 0;
     border-color: transparent #333333;
@@ -2764,7 +2763,7 @@ ul.jsxc_vCard {
 #jsxc_windowList {
   position: fixed;
   bottom: 0;
-  right: 220px;
+  right: 235px;
   left: 0;
   z-index: 50;
   clip: rect(-10000px, 10000px, 30px, 30px); }
