@@ -1480,6 +1480,11 @@ jsxc.gui.roster = {
 
       $('#jsxc_roster').addClass('jsxc_state_' + rosterState);
 
+      // set class of diaspora* container
+      $('body > .container-fluid')
+        .removeClass('chat-roster-shown chat-roster-hidden')
+        .addClass('chat-roster-'+rosterState);
+
       if (rosterState === 'hidden') {
          $('#jsxc_roster').css('right', -1 * $('#jsxc_roster').innerWidth() + 'px');
          $('#jsxc_windowList').css('right', '30px');
