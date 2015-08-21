@@ -1,5 +1,5 @@
 /*!
- * jsxc v2.1.0-beta1 - 2015-07-30
+ * jsxc v2.1.0-beta1 - 2015-08-21
  * 
  * Copyright (c) 2015 Klaus Herberth <klaus@jsxc.org> <br>
  * Released under the MIT license
@@ -1092,6 +1092,14 @@ jsxc.xmpp = {
     * @private
     */
    connected: function() {
+
+      // After we established a new connection we should
+      // send our presence again cause it get lost earlier
+      // in the changePresence function while the login
+      // process is running
+      //
+      // This is a diaspora problem in respect of the ajax login
+      jsxc.gui.changePresence('online');
 
       jsxc.xmpp.conn.pause();
 
@@ -3488,12 +3496,23 @@ jsxc.gui.roster = {
 
       $('#jsxc_roster').addClass('jsxc_state_' + rosterState);
 
+      // set class of diaspora* container
+      $('body > .container-fluid')
+        .removeClass('chat-roster-shown chat-roster-hidden')
+        .addClass('chat-roster-'+rosterState);
+
       if (rosterState === 'hidden') {
          $('#jsxc_roster').css('right', -1 * $('#jsxc_roster').innerWidth() + 'px');
-         $('#jsxc_windowList').css('right', '10px');
+         $('#jsxc_windowList').css('right', '30px');
       }
 
       var pres = jsxc.storage.getUserItem('presence') || 'offline';
+      // If there is no established connection
+      // we have to reset old localStorage data
+      if (jsxc.xmpp.conn === null) {
+        pres = 'offline';
+        jsxc.storage.setUserItem('presence', pres);
+      }
       $('#jsxc_presence > span').text($('#jsxc_presence > ul .jsxc_' + pres).text());
       jsxc.gui.updatePresence('own', pres);
 
@@ -3739,7 +3758,7 @@ jsxc.gui.roster = {
          right: ((roster_width + roster_right) * -1) + 'px'
       }, duration);
       wl.animate({
-         right: (10 - roster_right) + 'px'
+         right: (30 - roster_right) + 'px'
       }, duration);
 
       $(document).trigger('toggle.roster.jsxc', [state, duration]);
@@ -3749,6 +3768,8 @@ jsxc.gui.roster = {
     * Shows a text with link to a login box that no connection exists.
     */
    noConnection: function() {
+      if ($('#jsxc_roster').hasClass('jsxc_noConnection')) { return; }
+
       $('#jsxc_roster').addClass('jsxc_noConnection');
 
       $('#jsxc_buddylist').empty();
