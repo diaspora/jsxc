@@ -1491,6 +1491,12 @@ jsxc.gui.roster = {
       }
 
       var pres = jsxc.storage.getUserItem('presence') || 'offline';
+      // If there is no established connection
+      // we have to reset old localStorage data
+      if (jsxc.xmpp.conn === null) {
+        pres = 'offline';
+        jsxc.storage.setUserItem('presence', pres);
+      }
       $('#jsxc_presence > span').text($('#jsxc_presence > ul .jsxc_' + pres).text());
       jsxc.gui.updatePresence('own', pres);
 
@@ -1746,6 +1752,8 @@ jsxc.gui.roster = {
     * Shows a text with link to a login box that no connection exists.
     */
    noConnection: function() {
+      if ($('#jsxc_roster').hasClass('jsxc_noConnection')) { return; }
+
       $('#jsxc_roster').addClass('jsxc_noConnection');
 
       $('#jsxc_buddylist').empty();
