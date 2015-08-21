@@ -233,6 +233,14 @@ jsxc.xmpp = {
     */
    connected: function() {
 
+      // After we established a new connection we should
+      // send our presence again cause it get lost earlier
+      // in the changePresence function while the login
+      // process is running
+      //
+      // This is a diaspora problem in respect of the ajax login
+      jsxc.gui.changePresence('online');
+
       jsxc.xmpp.conn.pause();
 
       var nomJid = Strophe.getBareJidFromJid(jsxc.xmpp.conn.jid).toLowerCase() + '/' + Strophe.getResourceFromJid(jsxc.xmpp.conn.jid);
