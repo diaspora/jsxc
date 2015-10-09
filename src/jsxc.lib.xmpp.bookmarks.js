@@ -11,7 +11,7 @@ jsxc.xmpp.bookmarks = {};
  * @return {boolean} True: Server supports bookmark storage
  */
 jsxc.xmpp.bookmarks.remote = function() {
-   return jsxc.xmpp.conn.caps && jsxc.xmpp.conn.caps.hasFeatureByJid(jsxc.xmpp.conn.domain, Strophe.NS.PUBSUB + "#publish");
+   return jsxc.xmpp.conn.caps && jsxc.xmpp.hasFeatureByJid(jsxc.xmpp.conn.domain, Strophe.NS.PUBSUB + "#publish");
 };
 
 /**
@@ -26,12 +26,11 @@ jsxc.xmpp.bookmarks.load = function() {
    if (!ver || !caps._knownCapabilities[ver]) {
       // wait until we know server capabilities
       $(document).on('caps.strophe', function(ev, from) {
+         if (from === jsxc.xmpp.conn.domain) {
+            jsxc.xmpp.bookmarks.load();
 
-         if (from !== jsxc.xmpp.conn.domain) {
-            return;
+            $(document).off(ev);
          }
-
-         jsxc.xmpp.bookmarks.load();
       });
    }
 
@@ -96,7 +95,9 @@ jsxc.xmpp.bookmarks.loadFromRemote = function() {
             autojoin = false;
          }
 
-         jsxc.storage.setUserItem('buddy', room, {
+         var data = jsxc.storage.getUserItem('buddy', room) || {};
+
+         data = $.extend(data, {
             jid: room,
             name: roomName,
             sub: 'both',
@@ -108,6 +109,8 @@ jsxc.xmpp.bookmarks.loadFromRemote = function() {
             autojoin: autojoin,
             nickname: nickname
          });
+
+         jsxc.storage.setUserItem('buddy', room, data);
 
          bl.push(room);
          jsxc.gui.roster.add(room);

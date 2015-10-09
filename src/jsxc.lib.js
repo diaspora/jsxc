@@ -233,6 +233,7 @@ jsxc = {
          // use localStorage and set expiration to a day
          useLocalStorage: true,
          localStorageExpirationTime: 60 * 60 * 24 * 1000,
+         debug: jsxc.storage.getItem('debug') === true
       });
 
       if (jsxc.storage.getItem('debug') === true) {
@@ -536,7 +537,7 @@ jsxc = {
       }
 
       $(document).on('connectionReady.jsxc', function() {
-         jsxc.gui.updateAvatar($('#jsxc_avatar'), jsxc.jidToBid(jsxc.storage.getItem('jid')), 'own');
+         jsxc.gui.updateAvatar($('#jsxc_roster > .jsxc_bottom'), jsxc.jidToBid(jsxc.storage.getItem('jid')), 'own');
       });
 
       jsxc.xmpp.login();
@@ -629,7 +630,7 @@ jsxc = {
     * @returns comparable bar jid
     */
    jidToBid: function(jid) {
-      return Strophe.getBareJidFromJid(jid).toLowerCase();
+      return Strophe.unescapeNode(Strophe.getBareJidFromJid(jid).toLowerCase());
    },
 
    /**
@@ -835,5 +836,9 @@ jsxc = {
       }
 
       return hash;
+   },
+
+   isExtraSmallDevice: function() {
+      return $(window).width() < 500;
    }
 };
