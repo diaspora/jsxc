@@ -1,5 +1,5 @@
 /*!
- * jsxc v2.1.0-beta1 - 2015-08-21
+ * jsxc v2.1.4 - 2015-10-09
  * 
  * Copyright (c) 2015 Klaus Herberth <klaus@jsxc.org> <br>
  * Released under the MIT license
@@ -7,7 +7,7 @@
  * Please see http://www.jsxc.org/
  * 
  * @author Klaus Herberth <klaus@jsxc.org>
- * @version 2.1.0-beta1
+ * @version 2.1.4
  * @license MIT
  */
 
@@ -25,7 +25,7 @@ var jsxc = null, RTC = null, RTCPeerconnection = null;
  */
 jsxc = {
    /** Version of jsxc */
-   version: '2.1.0-beta1',
+   version: '2.1.4',
 
    /** True if i'm the master */
    master: false,
@@ -253,6 +253,7 @@ jsxc = {
          // use localStorage and set expiration to a day
          useLocalStorage: true,
          localStorageExpirationTime: 60 * 60 * 24 * 1000,
+         debug: jsxc.storage.getItem('debug') === true
       });
 
       if (jsxc.storage.getItem('debug') === true) {
@@ -556,7 +557,7 @@ jsxc = {
       }
 
       $(document).on('connectionReady.jsxc', function() {
-         jsxc.gui.updateAvatar($('#jsxc_avatar'), jsxc.jidToBid(jsxc.storage.getItem('jid')), 'own');
+         jsxc.gui.updateAvatar($('#jsxc_roster > .jsxc_bottom'), jsxc.jidToBid(jsxc.storage.getItem('jid')), 'own');
       });
 
       jsxc.xmpp.login();
@@ -649,7 +650,7 @@ jsxc = {
     * @returns comparable bar jid
     */
    jidToBid: function(jid) {
-      return Strophe.getBareJidFromJid(jid).toLowerCase();
+      return Strophe.unescapeNode(Strophe.getBareJidFromJid(jid).toLowerCase());
    },
 
    /**
@@ -855,6 +856,10 @@ jsxc = {
       }
 
       return hash;
+   },
+
+   isExtraSmallDevice: function() {
+      return $(window).width() < 500;
    }
 };
 
@@ -1503,7 +1508,7 @@ jsxc.xmpp = {
 
          var error = $(presence).find('error');
 
-         //@TODO display error message
+         //TODO display error message
          jsxc.error('[XMPP] ' + error.attr('code') + ' ' + error.find(">:first-child").prop('tagName'));
          return true;
       }
@@ -1932,6 +1937,57 @@ jsxc.xmpp = {
       }
 
       return null;
+   },
+
+   /**
+    * Test if jid has given features
+    * 
+    * @param  {string}   jid     Jabber id
+    * @param  {string[]} feature Single feature or list of features
+    * @param  {Function} cb      Called with the result as first param.
+    * @return {boolean}          True, if jid has all given features. Null, if we do not know it currently.
+    */
+   hasFeatureByJid: function(jid, feature, cb) {
+      var conn = jsxc.xmpp.conn;
+      cb = cb || function() {};
+
+      if (!feature) {
+         return false;
+      }
+
+      if (!$.isArray(feature)) {
+         feature = $.makeArray(feature);
+      }
+
+      var check = function(knownCapabilities) {
+         if (!knownCapabilities) {
+            return null;
+         }
+         var i;
+         for (i = 0; i < feature.length; i++) {
+            if (knownCapabilities['features'].indexOf(feature[i]) < 0) {
+               return false;
+            }
+         }
+         return true;
+      };
+
+      if (conn.caps._jidVerIndex[jid] && conn.caps._knownCapabilities[conn.caps._jidVerIndex[jid]]) {
+         var hasFeature = check(conn.caps._knownCapabilities[conn.caps._jidVerIndex[jid]]);
+         cb(hasFeature);
+
+         return hasFeature;
+      }
+
+      $(document).on('strophe.caps', function(ev, j, capabilities) {
+         if (j === jid) {
+            cb(check(capabilities));
+
+            $(document).off(ev);
+         }
+      });
+
+      return null;
    }
 };
 
@@ -2188,7 +2244,7 @@ jsxc.gui = {
       ri.data(data);
 
       // Add online status
-      ue.add(spot).removeClass('jsxc_' + jsxc.CONST.STATUS.join(' jsxc_')).addClass('jsxc_' + jsxc.CONST.STATUS[data.status]);
+      jsxc.gui.updatePresence(bid, jsxc.CONST.STATUS[data.status]);
 
       // Change name and add title
       ue.find('.jsxc_name:first').add(spot).text(data.name).attr('title', $.t('is_', {
@@ -2367,35 +2423,32 @@ jsxc.gui = {
     * 
     * @memberof jsxc.gui
     */
-   toggleList: function() {
-      var self = $(this);
+   toggleList: function(el) {
+      var self = el || $(this);
 
       self.disableSelection();
+
+      self.addClass('jsxc_list');
 
       var ul = self.find('ul');
       var slideUp = null;
 
       slideUp = function() {
-         ul.slideUp({
-            complete: function() {
-               self.removeClass('jsxc_opened');
-            }
-         });
+
+         self.removeClass('jsxc_opened');
 
          $('body').off('click', null, slideUp);
       };
 
       $(this).click(function() {
 
-         if (ul.is(":hidden")) {
+         if (!self.hasClass('jsxc_opened')) {
             // hide other lists
             $('body').click();
             $('body').one('click', slideUp);
          } else {
             $('body').off('click', null, slideUp);
          }
-
-         ul.slideToggle();
 
          window.clearTimeout(ul.data('timer'));
 
@@ -3170,7 +3223,7 @@ jsxc.gui = {
          jsxc.xmpp.sendPres();
       }
 
-      $('#jsxc_presence > span').text($('#jsxc_presence > ul .jsxc_' + pres).text());
+      $('#jsxc_presence > span').text($('#jsxc_presence .jsxc_inner ul .jsxc_' + pres).text());
 
       jsxc.gui.updatePresence('own', pres);
    },
@@ -3197,7 +3250,15 @@ jsxc.gui = {
          }
       }
 
-      $('.jsxc_presence[data-bid="' + bid + '"]').removeClass('jsxc_' + jsxc.CONST.STATUS.join(' jsxc_')).addClass('jsxc_' + pres);
+      $('[data-bid="' + bid + '"]').each(function() {
+         var el = $(this);
+
+         if (el.find('.jsxc_avatar').length > 0) {
+            el = el.find('.jsxc_avatar');
+         }
+
+         el.removeClass('jsxc_' + jsxc.CONST.STATUS.join(' jsxc_')).addClass('jsxc_' + pres);
+      });
    },
 
    /**
@@ -3459,7 +3520,7 @@ jsxc.gui.roster = {
       });
 
       $('#jsxc_roster .jsxc_onlineHelp').click(function() {
-         window.open("/help/chat", "onlineHelp");
+         window.open(jsxc.options.onlineHelp, 'onlineHelp');
       });
 
       $('#jsxc_roster .jsxc_about').click(function() {
@@ -3470,7 +3531,7 @@ jsxc.gui.roster = {
          jsxc.gui.roster.toggle();
       });
 
-      $('#jsxc_presence > ul > li').click(function() {
+      $('#jsxc_presence li').click(function() {
          var self = $(this);
          var pres = self.data('pres');
 
@@ -3513,7 +3574,7 @@ jsxc.gui.roster = {
         pres = 'offline';
         jsxc.storage.setUserItem('presence', pres);
       }
-      $('#jsxc_presence > span').text($('#jsxc_presence > ul .jsxc_' + pres).text());
+      $('#jsxc_presence > span').text($('#jsxc_presence .jsxc_' + pres).text());
       jsxc.gui.updatePresence('own', pres);
 
       jsxc.gui.tooltip('#jsxc_roster');
@@ -3539,8 +3600,10 @@ jsxc.gui.roster = {
          jsxc.gui.window.open(bid);
       });
 
-      bud.find('.jsxc_chaticon').click(function() {
+      bud.find('.jsxc_msg').click(function() {
          jsxc.gui.window.open(bid);
+
+         return false;
       });
 
       bud.find('.jsxc_rename').click(function() {
@@ -3558,17 +3621,25 @@ jsxc.gui.roster = {
       var expandClick = function() {
          bud.trigger('extra.jsxc');
 
-         bud.toggleClass('jsxc_expand');
+         $('body').click();
 
-         jsxc.gui.updateAvatar(bud, data.jid, data.avatar);
+         if (!bud.find('.jsxc_menu').hasClass('jsxc_open')) {
+            bud.find('.jsxc_menu').addClass('jsxc_open');
+
+            $('body').one('click', function() {
+               bud.find('.jsxc_menu').removeClass('jsxc_open');
+            });
+         }
+
          return false;
       };
 
-      bud.find('.jsxc_control').click(expandClick);
+      bud.find('.jsxc_more').click(expandClick);
       bud.dblclick(expandClick);
 
-      bud.find('.jsxc_vcardicon').click(function() {
+      bud.find('.jsxc_vcard').click(function() {
          jsxc.gui.showVcard(data.jid);
+
          return false;
       });
 
@@ -3578,6 +3649,16 @@ jsxc.gui.roster = {
       $('#jsxc_buddylist').slimScroll({
          scrollTo: '0px'
       });
+
+      var chat = jsxc.storage.getUserItem('chat', bid) || [];
+      var i = 0;
+      while (chat.length > i) {
+         if (chat[i].direction !== 'sys') {
+            $('[data-bid="' + bid + '"]').find('.jsxc_lastmsg .jsxc_text').html(chat[i].msg);
+            break;
+         }
+         i++;
+      }
 
       $(document).trigger('add.roster.jsxc', [bid, data, bud]);
    },
@@ -3736,6 +3817,7 @@ jsxc.gui.roster = {
     * @param {Integer} d Duration in ms
     */
    toggle: function(d) {
+      var rosterPromise;
       var duration = d || 500;
 
       var roster = $('#jsxc_roster');
@@ -3744,6 +3826,10 @@ jsxc.gui.roster = {
       var roster_width = roster.innerWidth();
       var roster_right = parseFloat($('#jsxc_roster').css('right'));
       var state = (roster_right < 0) ? 'shown' : 'hidden';
+
+      if (state === 'shown' && jsxc.isExtraSmallDevice()) {
+         jsxc.gui.window.hide();
+      }
 
       jsxc.storage.setUserItem('roster', state);
 
@@ -3754,14 +3840,18 @@ jsxc.gui.roster = {
 
       roster.removeClass('jsxc_state_hidden jsxc_state_shown').addClass('jsxc_state_' + state);
 
-      roster.animate({
+      rosterPromise = roster.animate({
          right: ((roster_width + roster_right) * -1) + 'px'
-      }, duration);
+      }, duration).promise();
       wl.animate({
-         right: (30 - roster_right) + 'px'
-      }, duration);
+         right: (10 - roster_right) + 'px'
+      }, duration).promise().done(function() {
+         jsxc.gui.updateWindowListSB();
+      });
 
       $(document).trigger('toggle.roster.jsxc', [state, duration]);
+
+      return rosterPromise;
    },
 
    /**
@@ -3910,7 +4000,7 @@ jsxc.gui.window = {
          return jsxc.gui.window.get(bid);
       }
 
-      var win = jsxc.gui.windowTemplate.clone().attr('data-bid', bid).hide().appendTo('#jsxc_windowList > ul').show('slow');
+      var win = jsxc.gui.windowTemplate.clone().attr('data-bid', bid).appendTo('#jsxc_windowList > ul');
       var data = jsxc.storage.getUserItem('buddy', bid);
 
       // Attach jid to window
@@ -3918,7 +4008,24 @@ jsxc.gui.window = {
 
       // Add handler
 
-      jsxc.gui.toggleList.call(win.find('.jsxc_settings'));
+      // @TODO generalize this. Duplicate of jsxc.roster.add
+      var expandClick = function() {
+         win.trigger('extra.jsxc');
+
+         $('body').click();
+
+         if (!win.find('.jsxc_menu').hasClass('jsxc_open')) {
+            win.find('.jsxc_menu').addClass('jsxc_open');
+
+            $('body').one('click', function() {
+               win.find('.jsxc_menu').removeClass('jsxc_open');
+            });
+         }
+
+         return false;
+      };
+
+      win.find('.jsxc_more').click(expandClick);
 
       win.find('.jsxc_verification').click(function() {
          jsxc.gui.showVerification(bid);
@@ -3989,8 +4096,6 @@ jsxc.gui.window = {
          distance: '3px'
       });
 
-      win.find('.jsxc_fade').hide();
-
       win.find('.jsxc_name').disableSelection();
 
       /*win.find('.slimScrollDiv').resizable({
@@ -3998,16 +4103,17 @@ jsxc.gui.window = {
          minHeight: 234,
          minWidth: 250,
          resize: function(event, ui) {
-            win.width(ui.size.width);
-            win.find('.jsxc_textarea').slimScroll({
-               height: ui.size.height
-            });
-            var offset = win.find('.slimScrollDiv').position().top;
-            win.find('.jsxc_emoticons').css('top', (ui.size.height + offset + 6) + 'px');
-
-            $(document).trigger('resize.window.jsxc', [win, bid, ui.size]);
+            jsxc.gui.window.resize(win, ui);
+         },
+         start: function() {
+            win.removeClass('jsxc_normal');
+         },
+         stop: function() {
+            win.addClass('jsxc_normal');
          }
       });*/
+
+      win.find('.jsxc_window').css('bottom', -1 * win.find('.jsxc_fade').height());
 
       if ($.inArray(bid, jsxc.storage.getUserItem('windowlist')) < 0) {
 
@@ -4036,7 +4142,7 @@ jsxc.gui.window = {
             win.find('input').val(win.find('input').val() + ins);
             win.find('input').focus();
          });
-         win.find('.jsxc_emoticons ul').append(li);
+         win.find('.jsxc_emoticons ul').prepend(li);
       });
 
       jsxc.gui.toggleList.call(win.find('.jsxc_emoticons'));
@@ -4060,6 +4166,76 @@ jsxc.gui.window = {
    },
 
    /**
+    * Resize given window to given size. If no size is provided the window is resized to the default size.
+    * 
+    * @param  {string|jquery} win Bid or window object
+    * @param  {object} ui    The size has to be in the format {size:{width: [INT], height: [INT]}}
+    * @param  {[type]} outer If true the given size is used as outer dimensions.
+    */
+   resize: function(win, ui, outer) {
+      var bid;
+
+      if (typeof win === 'object') {
+         bid = win.attr('data-bid');
+      } else if (typeof win === 'string') {
+         bid = win;
+         win = jsxc.gui.window.get(bid);
+      } else {
+         jsxc.warn('jsxc.gui.window.resize has to be called either with bid or window object.');
+         return;
+      }
+
+      if (!win.attr('data-default-height')) {
+         win.attr('data-default-height', win.find('.ui-resizable').height());
+      }
+
+      if (!win.attr('data-default-width')) {
+         win.attr('data-default-width', win.find('.ui-resizable').width());
+      }
+
+      var outer_height_diff = (outer) ? win.find('.jsxc_window').outerHeight() - win.find('.ui-resizable').height() : 0;
+
+      ui = $.extend({
+         size: {
+            width: parseInt(win.attr('data-default-width')),
+            height: parseInt(win.attr('data-default-height')) + outer_height_diff
+         }
+      }, ui || {});
+
+      if (outer) {
+         ui.size.height -= outer_height_diff;
+      }
+
+      win.find('.slimScrollDiv').css({
+         width: ui.size.width,
+         height: ui.size.height
+      });
+
+      win.width(ui.size.width);
+
+      win.find('.jsxc_textarea').slimScroll({
+         height: ui.size.height
+      });
+
+      // var offset = win.find('.slimScrollDiv').position().top;
+      //win.find('.jsxc_emoticons').css('top', (ui.size.height + offset + 6) + 'px');
+
+      $(document).trigger('resize.window.jsxc', [win, bid, ui.size]);
+   },
+
+   fullsize: function(bid) {
+      var win = jsxc.gui.window.get(bid);
+      var size = jsxc.options.viewport.getSize();
+
+      size.width -= 10;
+      size.height -= win.find('.jsxc_bar').outerHeight() + win.find('.jsxc_textinput').outerHeight();
+
+      jsxc.gui.window.resize(win, {
+         size: size
+      });
+   },
+
+   /**
     * Returns the window element
     * 
     * @param {String} bid
@@ -4078,28 +4254,9 @@ jsxc.gui.window = {
     */
    open: function(bid) {
       var win = jsxc.gui.window.init(bid);
+
       jsxc.gui.window.show(bid);
       jsxc.gui.window.highlight(bid);
-
-      var padding = $("#jsxc_windowListSB").width();
-      var innerWidth = $('#jsxc_windowList>ul').width();
-      var outerWidth = $('#jsxc_windowList').width() - padding;
-
-      if (innerWidth > outerWidth) {
-         var offset = parseInt($('#jsxc_windowList>ul').css('right'));
-         var width = win.outerWidth(true);
-
-         var right = innerWidth - win.position().left - width + offset;
-         var left = outerWidth - (innerWidth - win.position().left) - offset;
-
-         if (left < 0) {
-            jsxc.gui.scrollWindowListBy(left * -1);
-         }
-
-         if (right < 0) {
-            jsxc.gui.scrollWindowListBy(right);
-         }
-      }
 
       return win;
    },
@@ -4135,11 +4292,8 @@ jsxc.gui.window = {
     * @param {String} bid
     */
    _close: function(bid) {
-      jsxc.gui.window.get(bid).hide('slow', function() {
-         $(this).remove();
-
-         jsxc.gui.updateWindowListSB();
-      });
+      jsxc.gui.window.get(bid).remove();
+      jsxc.gui.updateWindowListSB();
    },
 
    /**
@@ -4155,7 +4309,7 @@ jsxc.gui.window = {
          return;
       }
 
-      if (win.find('.jsxc_fade').is(':hidden')) {
+      if (win.hasClass('jsxc_min')) {
          jsxc.gui.window.show(bid);
       } else {
          jsxc.gui.window.hide(bid);
@@ -4173,7 +4327,7 @@ jsxc.gui.window = {
 
       jsxc.storage.updateUserItem('window', bid, 'minimize', false);
 
-      jsxc.gui.window._show(bid);
+      return jsxc.gui.window._show(bid);
    },
 
    /**
@@ -4184,8 +4338,41 @@ jsxc.gui.window = {
     */
    _show: function(bid) {
       var win = jsxc.gui.window.get(bid);
-      jsxc.gui.window.get(bid).find('.jsxc_fade').slideDown();
-      win.removeClass('jsxc_min');
+      var rosterPromise, windowPromise;
+
+      if (jsxc.isExtraSmallDevice()) {
+         if (parseFloat($('#jsxc_roster').css('right')) >= 0) {
+            rosterPromise = jsxc.gui.roster.toggle();
+         }
+
+         jsxc.gui.window.hide();
+         jsxc.gui.window.fullsize(bid);
+      }
+
+      win.removeClass('jsxc_min').addClass('jsxc_normal');
+      win.find('.jsxc_window').css('bottom', '0');
+
+      $.when(rosterPromise).done(function() {
+         var padding = $("#jsxc_windowListSB").width();
+         var innerWidth = $('#jsxc_windowList>ul').width();
+         var outerWidth = $('#jsxc_windowList').width() - padding;
+
+         if (innerWidth > outerWidth) {
+            var offset = parseInt($('#jsxc_windowList>ul').css('right'));
+            var width = win.outerWidth(true);
+
+            var right = innerWidth - win.position().left - width + offset;
+            var left = outerWidth - (innerWidth - win.position().left) - offset;
+
+            if (left < 0) {
+               jsxc.gui.scrollWindowListBy(left * -1);
+            }
+
+            if (right < 0) {
+               jsxc.gui.scrollWindowListBy(right);
+            }
+         }
+      });
 
       // If the area is hidden, the scrolldown function doesn't work. So we
       // call it here.
@@ -4196,17 +4383,33 @@ jsxc.gui.window = {
       }
 
       win.trigger('show.window.jsxc');
+
+      return windowPromise;
    },
 
    /**
     * Minimize text area and save
     * 
-    * @param {String} bid
+    * @param {String} [bid]
     */
    hide: function(bid) {
-      jsxc.storage.updateUserItem('window', bid, 'minimize', true);
+      var hide = function(bid) {
+         jsxc.storage.updateUserItem('window', bid, 'minimize', true);
 
-      jsxc.gui.window._hide(bid);
+         jsxc.gui.window._hide(bid);
+      };
+
+      if (bid) {
+         hide(bid);
+      } else {
+         $('#jsxc_windowList > ul > li').each(function() {
+            var el = $(this);
+
+            if (!el.hasClass('jsxc_min')) {
+               hide(el.attr('data-bid'));
+            }
+         });
+      }
    },
 
    /**
@@ -4215,9 +4418,12 @@ jsxc.gui.window = {
     * @param {String} bid
     */
    _hide: function(bid) {
-      jsxc.gui.window.get(bid).addClass('jsxc_min').find(' .jsxc_fade').slideUp();
+      var win = jsxc.gui.window.get(bid);
 
-      jsxc.gui.window.get(bid).trigger('hidden.window.jsxc');
+      win.removeClass('jsxc_normal').addClass('jsxc_min');
+      win.find('.jsxc_window').css('bottom', -1 * win.find('.jsxc_fade').height());
+
+      win.trigger('hidden.window.jsxc');
    },
 
    /**
@@ -4290,7 +4496,7 @@ jsxc.gui.window = {
       encrypted = encrypted || data.msgstate === OTR.CONST.MSGSTATE_ENCRYPTED;
       var post = jsxc.storage.saveMessage(bid, direction, msg, encrypted, forwarded, stamp, sender);
 
-      if (direction === 'in') {
+      if (direction === 'in' && !jsxc.gui.window.get(bid).find('.jsxc_textinput').is(":focus")) {
          jsxc.gui.unreadMsg(bid);
 
          $(document).trigger('postmessagein.jsxc', [bid, html_msg]);
@@ -4382,6 +4588,10 @@ jsxc.gui.window = {
          jsxc.gui.window.get(bid).find('.jsxc_textarea').append('<div style="clear:both"/>');
       } else if (typeof post.stamp !== 'undefined') {
          msgDiv.append(msgTsDiv);
+      }
+
+      if (direction !== 'sys') {
+         $('[data-bid="' + bid + '"]').find('.jsxc_lastmsg .jsxc_text').html(msg);
       }
 
       win.find('.jsxc_textarea').append(msgDiv);
@@ -4555,6 +4765,9 @@ jsxc.muc = {
          EXITED: 2,
          AWAIT_DESTRUCTION: 3,
          DESTROYED: 4
+      },
+      ROOMCONFIG: {
+         INSTANT: 'instant'
       }
    },
 
@@ -4627,11 +4840,11 @@ jsxc.muc = {
     * @memberOf jsxc.muc
     */
    initMenu: function() {
-      var li = $('<li>').attr('class', 'jsxc_joinChat').text($.t('Join_chat'));
+      var li = $('<li>').attr('class', 'jsxc_joinChat jsxc_groupcontacticon').text($.t('Join_chat'));
 
       li.click(jsxc.muc.showJoinChat);
 
-      $('#jsxc_menu ul').append(li);
+      $('#jsxc_menu ul .jsxc_about').before(li);
    },
 
    /**
@@ -4834,7 +5047,7 @@ jsxc.muc = {
                var roomName = $(stanza).find('identity').attr('name');
                var subject = $(stanza).find('field[var="muc#roominfo_subject"]').attr('label');
 
-               //@TODO display subject, number of occupants, etc.
+               //TODO display subject, number of occupants, etc.
 
                discoReceived(roomName, subject);
             }, function() {
@@ -4893,7 +5106,7 @@ jsxc.muc = {
       }, function() {
          jsxc.debug('Could not load room configuration');
 
-         //@TODO show error
+         //TODO show error
       });
    },
 
@@ -4933,11 +5146,13 @@ jsxc.muc = {
 
          var config = Strophe.x.Form.fromHTML(form.get(0));
          self.conn.muc.saveConfiguration(room, config, function() {
+            jsxc.storage.updateUserItem('buddy', room, 'config', config);
+
             jsxc.debug('Room configuration saved.');
          }, function() {
             jsxc.warn('Could not save room configuration.');
 
-            //@TODO display error
+            //TODO display error
          });
 
          jsxc.gui.dialog.close();
@@ -4974,7 +5189,8 @@ jsxc.muc = {
          subject: subject,
          bookmarked: bookmark || false,
          autojoin: autojoin || false,
-         nickname: nickname
+         nickname: nickname,
+         config: null
       });
 
       jsxc.xmpp.conn.muc.join(room, nickname, null, null, null, password);
@@ -5280,8 +5496,11 @@ jsxc.muc = {
             jsxc.gui.roster.add(room);
          }
 
-         jsxc.gui.window.open(room);
-         jsxc.gui.dialog.close();
+         if ($('#jsxc_dialog').length > 0) {
+            // User joined the room manually 
+            jsxc.gui.window.open(room);
+            jsxc.gui.dialog.close();
+         }
       }
 
       var jid = xdata.find('item').attr('jid') || null;
@@ -5431,23 +5650,40 @@ jsxc.muc = {
       /** Inform user that a new room has been created */
       201: function(room) {
          var self = jsxc.muc;
+         var roomdata = jsxc.storage.getUserItem('buddy', room) || {};
 
-         jsxc.gui.showSelectionDialog({
-            header: $.t('Room_creation'),
-            msg: $.t('Do_you_want_to_change_the_default_room_configuration'),
-            primary: {
-               label: $.t('Default'),
-               cb: function() {
-                  self.conn.muc.createInstantRoom(room);
+         if (roomdata.autojoin && roomdata.config === self.CONST.ROOMCONFIG.INSTANT) {
+            self.conn.muc.createInstantRoom(room);
+         } else if (roomdata.autojoin && typeof roomdata.config !== 'undefined' && roomdata.config !== null) {
+            self.conn.muc.saveConfiguration(room, roomdata.config, function() {
+               jsxc.debug('Cached room configuration saved.');
+            }, function() {
+               jsxc.warn('Could not save cached room configuration.');
+
+               //TODO display error
+            });
+         } else {
+            jsxc.gui.showSelectionDialog({
+               header: $.t('Room_creation'),
+               msg: $.t('Do_you_want_to_change_the_default_room_configuration'),
+               primary: {
+                  label: $.t('Default'),
+                  cb: function() {
+                     jsxc.gui.dialog.close();
+
+                     self.conn.muc.createInstantRoom(room);
+
+                     jsxc.storage.updateUserItem('buddy', room, 'config', self.CONST.ROOMCONFIG.INSTANT);
+                  }
+               },
+               option: {
+                  label: $.t('Change'),
+                  cb: function() {
+                     self.showRoomConfiguration(room);
+                  }
                }
-            },
-            option: {
-               label: $.t('Change'),
-               cb: function() {
-                  self.showRoomConfiguration(room);
-               }
-            }
-         });
+            });
+         }
       },
       /** Inform user that he or she has been banned */
       301: function(room, nickname, data, xdata) {
@@ -6596,6 +6832,25 @@ jsxc.options = {
       iceServers: [{
          urls: 'stun:stun.stunprotocol.org'
       }]
+   },
+
+   /** Link to an online user manual */
+   onlineHelp: 'http://www.jsxc.org/manual.html',
+
+   viewport: {
+      getSize: function() {
+         var w = $(window).width() - $('#jsxc_windowListSB').width();
+         var h = $(window).height();
+
+         if (jsxc.storage.getUserItem('roster') === 'shown') {
+            w -= $('#jsxc_roster').outerWidth(true);
+         }
+
+         return {
+            width: w,
+            height: h
+         };
+      }
    }
 };
 
@@ -7138,7 +7393,12 @@ jsxc.storage = {
       }
 
       if (typeof(value) === 'object') {
-         value = JSON.stringify(value);
+         // exclude jquery objects, because otherwise safari will fail
+         value = JSON.stringify(value, function(key, val) {
+            if (!(val instanceof jQuery)) {
+               return val;
+            }
+         });
       }
 
       localStorage.setItem(jsxc.storage.getPrefix(uk) + key, value);
@@ -7967,7 +8227,7 @@ jsxc.webrtc = {
       }
 
       var div = $('<div>').addClass('jsxc_video');
-      win.find('.jsxc_transfer:eq(1)').after(div);
+      win.find('.jsxc_tools .jsxc_settings').after(div);
 
       self.updateIcon(jsxc.jidToBid(win.data('jid')));
    },
@@ -8186,6 +8446,9 @@ jsxc.webrtc = {
     */
    onMediaFailure: function(ev, err) {
       var self = jsxc.webrtc;
+      err = err || {
+         name: 'Undefined'
+      };
 
       self.setStatus('media failure');
 
@@ -8285,13 +8548,16 @@ jsxc.webrtc = {
       this.localStream = null;
       this.remoteStream = null;
 
-      var win = $('#jsxc_dialog .jsxc_chatarea > ul > li');
+      var win = $('#jsxc_webrtc .jsxc_chatarea > ul > li');
       $('#jsxc_windowList > ul').prepend(win.detach());
       //win.find('.slimScrollDiv').resizable('enable');
+      //jsxc.gui.window.resize(win);
 
       $(document).off('cleanup.dialog.jsxc');
       $(document).off('error.jingle');
+
       jsxc.gui.dialog.close();
+      $('#jsxc_webrtc').remove();
 
       jsxc.gui.window.postMessage(bid, 'sys', ($.t('Call_terminated') + (reason ? (': ' + $.t('jingle_reason_' + reason.condition)) : '') + '.'));
    },
@@ -8327,9 +8593,9 @@ jsxc.webrtc = {
       this.setStatus(isAudioDevice ? 'Use remote audio device.' : 'No remote audio device');
 
       if ($('.jsxc_remotevideo').length) {
-         this.attachMediaStream($('#jsxc_dialog .jsxc_remotevideo'), stream);
+         this.attachMediaStream($('#jsxc_webrtc .jsxc_remotevideo'), stream);
 
-         $('#jsxc_dialog .jsxc_' + (isVideoDevice ? 'remotevideo' : 'noRemoteVideo')).addClass('jsxc_deviceAvailable');
+         $('#jsxc_webrtc .jsxc_' + (isVideoDevice ? 'remotevideo' : 'noRemoteVideo')).addClass('jsxc_deviceAvailable');
       }
    },
 
@@ -8358,7 +8624,7 @@ jsxc.webrtc = {
    onRemoteStreamRemoved: function(session) {
       this.setStatus('Remote stream for ' + session.jid + ' removed.');
 
-      //@TODO clean up
+      //TODO clean up
    },
 
    /**
@@ -8377,8 +8643,8 @@ jsxc.webrtc = {
 
       if (state === 'connected') {
 
-         $('#jsxc_dialog .jsxc_deviceAvailable').show();
-         $('#jsxc_dialog .bubblingG').hide();
+         $('#jsxc_webrtc .jsxc_deviceAvailable').show();
+         $('#jsxc_webrtc .bubblingG').hide();
 
       } else if (state === 'failed') {
          jsxc.gui.window.postMessage(jsxc.jidToBid(session.peerID), 'sys', $.t('ICE_connection_failure'));
@@ -8565,129 +8831,137 @@ jsxc.webrtc = {
 jsxc.gui.showVideoWindow = function(jid) {
    var self = jsxc.webrtc;
 
-   $(document).one('complete.dialog.jsxc', function() {
-
-      // mute own video element to avoid echoes
-      $('#jsxc_dialog .jsxc_localvideo')[0].muted = true;
-      $('#jsxc_dialog .jsxc_localvideo')[0].volume = 0;
-
-      var rv = $('#jsxc_dialog .jsxc_remotevideo');
-      var lv = $('#jsxc_dialog .jsxc_localvideo');
-
-      lv.draggable({
-         containment: "parent"
-      });
-
-      self.attachMediaStream(lv, self.localStream);
-
-      var w_dialog = $('#jsxc_dialog').width();
-      var w_remote = rv.width();
-
-      // fit in video
-      if (w_remote > w_dialog) {
-         var scale = w_dialog / w_remote;
-         var new_h = rv.height() * scale;
-         var new_w = w_dialog;
-         var vc = $('#jsxc_dialog .jsxc_videoContainer');
-
-         rv.height(new_h);
-         rv.width(new_w);
-
-         vc.height(new_h);
-         vc.width(new_w);
-
-         lv.height(lv.height() * scale);
-         lv.width(lv.width() * scale);
-      }
-
-      if (self.remoteStream) {
-         self.attachMediaStream(rv, self.remoteStream);
-
-         $('#jsxc_dialog .jsxc_' + (self.remoteStream.getVideoTracks().length > 0 ? 'remotevideo' : 'noRemoteVideo')).addClass('jsxc_deviceAvailable');
-      }
-
-      var toggleMulti = function(elem, open) {
-         $('#jsxc_dialog .jsxc_multi > div').not(elem).slideUp();
-
-         var opt = {
-            complete: jsxc.gui.dialog.resize
-         };
-
-         if (open) {
-            elem.slideDown(opt);
-         } else {
-            elem.slideToggle(opt);
-         }
-      };
-
-      var win = jsxc.gui.window.open(jsxc.jidToBid(jid));
-
-      //win.find('.slimScrollDiv').resizable('disable');
-      win.find('.jsxc_textarea').slimScroll({
-         height: 413
-      });
-      win.find('.jsxc_emoticons').css('top', (413 + 6) + 'px');
-
-      $('#jsxc_dialog .jsxc_chatarea ul').append(win.detach());
-
-      $('#jsxc_dialog .jsxc_hangUp').click(function() {
-         jsxc.webrtc.hangUp('success');
-      });
-
-      $('#jsxc_dialog .jsxc_snapshot').click(function() {
-         jsxc.webrtc.snapshot(rv);
-         toggleMulti($('#jsxc_dialog .jsxc_snapshotbar'), true);
-      });
-
-      $('#jsxc_dialog .jsxc_snapshots').click(function() {
-         toggleMulti($('#jsxc_dialog .jsxc_snapshotbar'));
-      });
-
-      $('#jsxc_dialog .jsxc_showchat').click(function() {
-         var chatarea = $('#jsxc_dialog .jsxc_chatarea');
-
-         if (chatarea.is(':hidden')) {
-            chatarea.show();
-            $('#jsxc_dialog .jsxc_webrtc').width('900');
-            jsxc.gui.dialog.resize({
-               width: '920px'
-            });
-         } else {
-            chatarea.hide();
-            $('#jsxc_dialog .jsxc_webrtc').width('650');
-            jsxc.gui.dialog.resize({
-               width: '660px'
-            });
-         }
-      });
-
-      $('#jsxc_dialog .jsxc_fullscreen').click(function() {
-
-         if ($.support.fullscreen) {
-            // Reset position of localvideo
-            $(document).one('disabled.fullscreen', function() {
-               lv.removeAttr('style');
-            });
-
-            $('#jsxc_dialog .jsxc_videoContainer').fullscreen();
-         }
-      });
-
-      $('#jsxc_dialog .jsxc_volume').change(function() {
-         rv[0].volume = $(this).val();
-      });
-
-      $('#jsxc_dialog .jsxc_volume').dblclick(function() {
-         $(this).val(0.5);
-      });
-   });
-
    // needed to trigger complete.dialog.jsxc
    jsxc.gui.dialog.close();
 
-   return jsxc.gui.dialog.open(jsxc.gui.template.get('videoWindow'), {
-      noClose: true
+   $('body').append(jsxc.gui.template.get('videoWindow'));
+
+   // mute own video element to avoid echoes
+   $('#jsxc_webrtc .jsxc_localvideo')[0].muted = true;
+   $('#jsxc_webrtc .jsxc_localvideo')[0].volume = 0;
+
+   var rv = $('#jsxc_webrtc .jsxc_remotevideo');
+   var lv = $('#jsxc_webrtc .jsxc_localvideo');
+
+   lv.draggable({
+      containment: "parent"
    });
+
+   if (self.localStream) {
+      self.attachMediaStream(lv, self.localStream);
+   }
+
+   var w_dialog = $('#jsxc_webrtc').width();
+   var w_remote = rv.width();
+
+   // fit in video
+   if (w_remote > w_dialog) {
+      var scale = w_dialog / w_remote;
+      var new_h = rv.height() * scale;
+      var new_w = w_dialog;
+      var vc = $('#jsxc_webrtc .jsxc_videoContainer');
+
+      rv.height(new_h);
+      rv.width(new_w);
+
+      vc.height(new_h);
+      vc.width(new_w);
+
+      lv.height(lv.height() * scale);
+      lv.width(lv.width() * scale);
+   }
+
+   if (self.remoteStream) {
+      self.attachMediaStream(rv, self.remoteStream);
+
+      $('#jsxc_webrtc .jsxc_' + (self.remoteStream.getVideoTracks().length > 0 ? 'remotevideo' : 'noRemoteVideo')).addClass('jsxc_deviceAvailable');
+   }
+
+   var toggleMulti = function(elem, open) {
+      $('#jsxc_webrtc .jsxc_multi > div').not(elem).slideUp();
+
+      var opt = {
+         complete: jsxc.gui.dialog.resize
+      };
+
+      if (open) {
+         elem.slideDown(opt);
+      } else {
+         elem.slideToggle(opt);
+      }
+   };
+
+   var win = jsxc.gui.window.open(jsxc.jidToBid(jid));
+
+   win.find('.slimScrollDiv').resizable('disable');
+   jsxc.gui.window.resize(win, {
+      size: {
+         width: $('#jsxc_webrtc .jsxc_chatarea').width(),
+         height: $('#jsxc_webrtc .jsxc_chatarea').height()
+      }
+   }, true);
+
+   $('#jsxc_webrtc .jsxc_chatarea ul').append(win.detach());
+
+   $('#jsxc_webrtc .jsxc_hangUp').click(function() {
+      jsxc.webrtc.hangUp('success');
+   });
+
+   $('#jsxc_webrtc .jsxc_snapshot').click(function() {
+      jsxc.webrtc.snapshot(rv);
+      toggleMulti($('#jsxc_webrtc .jsxc_snapshotbar'), true);
+   });
+
+   $('#jsxc_webrtc .jsxc_snapshots').click(function() {
+      toggleMulti($('#jsxc_webrtc .jsxc_snapshotbar'));
+   });
+
+   $('#jsxc_webrtc .jsxc_showchat').click(function() {
+      var chatarea = $('#jsxc_webrtc .jsxc_chatarea');
+
+      if (chatarea.is(':hidden')) {
+         chatarea.show();
+         $('#jsxc_webrtc .jsxc_webrtc').width('900');
+         jsxc.gui.dialog.resize({
+            width: '920px'
+         });
+      } else {
+         chatarea.hide();
+         $('#jsxc_webrtc .jsxc_webrtc').width('650');
+         jsxc.gui.dialog.resize({
+            width: '660px'
+         });
+      }
+   });
+
+   $('#jsxc_webrtc .jsxc_fullscreen').click(function() {
+
+      if ($.support.fullscreen) {
+         // Reset position of localvideo
+         $(document).one('disabled.fullscreen', function() {
+            lv.removeAttr('style');
+         });
+
+         $('#jsxc_webrtc .jsxc_videoContainer').fullscreen();
+      }
+   });
+
+   $('#jsxc_webrtc .jsxc_volume').change(function() {
+      rv[0].volume = $(this).val();
+   });
+
+   $('#jsxc_webrtc .jsxc_volume').dblclick(function() {
+      $(this).val(0.5);
+   });
+
+   $('#jsxc_webrtc .jsxc_videoContainer').toggle(function() {
+      $('#jsxc_webrtc .jsxc_controlbar').css('opacity', '1.0');
+   }, function() {
+      $('#jsxc_webrtc .jsxc_controlbar').css('opacity', '');
+   });
+
+
+   return $('#jsxc_webrtc');
 };
 
 $.extend(jsxc.CONST, {
@@ -8715,7 +8989,7 @@ jsxc.xmpp.bookmarks = {};
  * @return {boolean} True: Server supports bookmark storage
  */
 jsxc.xmpp.bookmarks.remote = function() {
-   return jsxc.xmpp.conn.caps && jsxc.xmpp.conn.caps.hasFeatureByJid(jsxc.xmpp.conn.domain, Strophe.NS.PUBSUB + "#publish");
+   return jsxc.xmpp.conn.caps && jsxc.xmpp.hasFeatureByJid(jsxc.xmpp.conn.domain, Strophe.NS.PUBSUB + "#publish");
 };
 
 /**
@@ -8730,12 +9004,11 @@ jsxc.xmpp.bookmarks.load = function() {
    if (!ver || !caps._knownCapabilities[ver]) {
       // wait until we know server capabilities
       $(document).on('caps.strophe', function(ev, from) {
+         if (from === jsxc.xmpp.conn.domain) {
+            jsxc.xmpp.bookmarks.load();
 
-         if (from !== jsxc.xmpp.conn.domain) {
-            return;
+            $(document).off(ev);
          }
-
-         jsxc.xmpp.bookmarks.load();
       });
    }
 
@@ -8800,7 +9073,9 @@ jsxc.xmpp.bookmarks.loadFromRemote = function() {
             autojoin = false;
          }
 
-         jsxc.storage.setUserItem('buddy', room, {
+         var data = jsxc.storage.getUserItem('buddy', room) || {};
+
+         data = $.extend(data, {
             jid: room,
             name: roomName,
             sub: 'both',
@@ -8812,6 +9087,8 @@ jsxc.xmpp.bookmarks.loadFromRemote = function() {
             autojoin: autojoin,
             nickname: nickname
          });
+
+         jsxc.storage.setUserItem('buddy', room, data);
 
          bl.push(room);
          jsxc.gui.roster.add(room);
@@ -9056,11 +9333,13 @@ jsxc.gui.template['aboutDialog'] = '<h3>JavaScript XMPP Chat</h3>\n' +
 '   <br /> Requires an external <a href="https://xmpp.org/xmpp-software/servers/" target="_blank">XMPP server</a>.\n' +
 '</p>\n' +
 '<p>\n' +
-'   <b>Credits: </b> <a href="http://www.beepzoid.com/old-phones/" target="_blank">David English (Ringtone)</a>, <a href="https://soundcloud.com/freefilmandgamemusic/ping-1?in=freefilmandgamemusic/sets/free-notification-sounds-and" target="_blank">CameronMusic (Ping)</a>\n' +
+'   <b>Credits: </b> <a href="http://www.beepzoid.com/old-phones/" target="_blank">David English (Ringtone)</a>,\n' +
+'   <a href="https://soundcloud.com/freefilmandgamemusic/ping-1?in=freefilmandgamemusic/sets/free-notification-sounds-and" target="_blank">CameronMusic (Ping)</a>,\n' +
+'   <a href="http://www.picol.org/">Picol (Fullscreen icon)</a>\n' +
 '</p>\n' +
 '<p class="jsxc_libraries">\n' +
 '   <b>Libraries: </b>\n' +
-'   < $ dep.libraries $>\n' +
+'   <a href="http://strophe.im/strophejs/">strophe.js</a> (multiple), <a href="https://github.com/strophe/strophejs-plugins">strophe.js/muc</a> (MIT), <a href="https://github.com/strophe/strophejs-plugins">strophe.js/disco</a> (MIT), <a href="https://github.com/strophe/strophejs-plugins">strophe.js/caps</a> (MIT), <a href="https://github.com/strophe/strophejs-plugins">strophe.js/vcard</a> (MIT), <a href="https://github.com/strophe/strophejs-plugins/tree/master/bookmarks">strophe.js/bookmarks</a> (MIT), <a href="https://github.com/strophe/strophejs-plugins/tree/master/dataforms">strophe.js/x</a> (MIT), <a href="https://github.com/sualko/strophe.jinglejs">strophe.jinglejs</a> (MIT), <a href="https://github.com/neoatlantis/node-salsa20">Salsa20</a> (AGPL3), <a href="www.leemon.com">bigint</a> (public domain), <a href="code.google.com/p/crypto-js">cryptojs</a> (code.google.com/p/crypto-js/wiki/license), <a href="http://git.io/ee">eventemitter</a> (MIT), <a href="https://arlolra.github.io/otr/">otr.js</a> (MPL v2.0), <a href="http://i18next.com/">i18next</a> (MIT), <a href="http://dimsemenov.com/plugins/magnific-popup/">Magnific Popup</a> (MIT), <a href="https://github.com/ejci/favico.js">favico.js</a> (MIT)\n' +
 '</p>\n' +
 '\n' +
 '<button class="btn btn-default pull-right jsxc_debuglog">Show debug log</button>\n' +
@@ -9197,31 +9476,48 @@ jsxc.gui.template['bookmarkDialog'] = '<h3 data-i18n="Edit_bookmark"></h3>\n' +
 '</form>\n' +
 '';
 
-jsxc.gui.template['chatWindow'] = '<li class="jsxc_min jsxc_windowItem">\n' +
+jsxc.gui.template['chatWindow'] = '<li class="jsxc_windowItem">\n' +
 '   <div class="jsxc_window">\n' +
 '      <div class="jsxc_bar">\n' +
 '         <div class="jsxc_avatar">☺</div>\n' +
 '         <div class="jsxc_tools">\n' +
 '            <div class="jsxc_settings">\n' +
-'               <ul>\n' +
-'                  <li class="jsxc_fingerprints jsxc_otr jsxc_disabled" data-i18n="Fingerprints"></li>\n' +
-'                  <li class="jsxc_verification" data-i18n="Authentication"></li>\n' +
-'                  <li class="jsxc_transfer jsxc_otr jsxc_disabled" data-i18n="start_private"></li>\n' +
-'                  <li class="jsxc_clear" data-i18n="clear_history"></li>\n' +
-'               </ul>\n' +
+'               <div class="jsxc_more"></div>\n' +
+'               <div class="jsxc_inner jsxc_menu">\n' +
+'                  <ul>\n' +
+'                     <li>\n' +
+'                        <a class="jsxc_verification" href="#">\n' +
+'                           <span data-i18n="Authentication"></span>\n' +
+'                        </a>\n' +
+'                     </li>\n' +
+'                     <li>\n' +
+'                        <a class="jsxc_clear" href="#">\n' +
+'                           <span data-i18n="clear_history"></span>\n' +
+'                        </a>\n' +
+'                     </li>\n' +
+'                  </ul>\n' +
+'               </div>\n' +
 '            </div>\n' +
-'            <div class="jsxc_transfer jsxc_otr jsxc_disabled" />\n' +
 '            <div class="jsxc_close">×</div>\n' +
 '         </div>\n' +
-'         <div class="jsxc_unread" />\n' +
-'         <div class="jsxc_name" />\n' +
+'         <div class="jsxc_caption">\n' +
+'            <div class="jsxc_name" />\n' +
+'            <div class="jsxc_lastmsg">\n' +
+'               <span class="jsxc_unread" />\n' +
+'               <span class="jsxc_text" />\n' +
+'            </div>\n' +
+'         </div>\n' +
 '      </div>\n' +
 '      <div class="jsxc_fade">\n' +
-'         <div class="jsxc_gradient" />\n' +
 '         <div class="jsxc_textarea" />\n' +
 '         <div class="jsxc_emoticons">\n' +
-'            <ul />\n' +
+'            <div class="jsxc_inner">\n' +
+'               <ul>\n' +
+'                  <li style="clear:both"></li>\n' +
+'               </ul>\n' +
+'            </div>\n' +
 '         </div>\n' +
+'         <div class="jsxc_transfer jsxc_otr jsxc_disabled" />\n' +
 '         <input type="text" class="jsxc_textinput" data-i18n="[placeholder]Message" />\n' +
 '      </div>\n' +
 '   </div>\n' +
@@ -9384,53 +9680,61 @@ jsxc.gui.template['removeDialog'] = '<h3 data-i18n="Remove_buddy"></h3>\n' +
 
 jsxc.gui.template['roster'] = '<div id="jsxc_roster">\n' +
 '   <ul id="jsxc_buddylist"></ul>\n' +
-'   <div class="jsxc_bottom jsxc_presence" data-bid="own">\n' +
-'      <div id="jsxc_avatar">\n' +
-'         <div class="jsxc_avatar">☺</div>\n' +
-'      </div>\n' +
+'   <div class="jsxc_bottom jsxc_presence jsxc_rosteritem" data-bid="own">\n' +
+'      <div id="jsxc_avatar" class="jsxc_avatar" />\n' +
 '      <div id="jsxc_menu">\n' +
 '         <span></span>\n' +
-'         <ul>\n' +
-'            <!--<li class="jsxc_settings" data-i18n="Settings"></li>-->\n' +
-'            <li class="jsxc_muteNotification" data-i18n="Mute"></li>\n' +
-'            <!--<li class="jsxc_addBuddy" data-i18n="Add_buddy"></li>-->\n' +
-'            <li class="jsxc_hideOffline" data-i18n="Hide_offline"></li>\n' +
-'            <li class="jsxc_onlineHelp" data-i18n="Online_help"></li>\n' +
-'            <li class="jsxc_about" data-i18n="About"></li>\n' +
-'         </ul>\n' +
+'         <div class="jsxc_inner">\n' +
+'            <ul>\n' +
+'               <!--<li class="jsxc_settings jsxc_settingsicon" data-i18n="Settings"></li>-->\n' +
+'               <li class="jsxc_muteNotification" data-i18n="Mute"></li>\n' +
+'               <li class="jsxc_hideOffline" data-i18n="Hide_offline"></li>\n' +
+'               <!--<li class="jsxc_addBuddy jsxc_contacticon" data-i18n="Add_buddy"></li>-->\n' +
+'               <li class="jsxc_onlineHelp jsxc_helpicon" data-i18n="Online_help"></li>\n' +
+'               <li class="jsxc_about" data-i18n="About"></li>\n' +
+'            </ul>\n' +
+'         </div>\n' +
 '      </div>\n' +
 '      <div id="jsxc_notice">\n' +
 '         <span></span>\n' +
-'         <ul></ul>\n' +
+'         <div class="jsxc_inner">\n' +
+'            <ul></ul>\n' +
+'         </div>\n' +
 '      </div>\n' +
 '      <div id="jsxc_presence">\n' +
-'         <span data-i18n="Offline"></span>\n' +
-'         <ul>\n' +
-'            <li data-pres="online" class="jsxc_online" data-i18n="Online"></li>\n' +
-'            <li data-pres="chat" class="jsxc_chat" data-i18n="Chatty"></li>\n' +
-'            <li data-pres="away" class="jsxc_away" data-i18n="Away"></li>\n' +
-'            <li data-pres="xa" class="jsxc_xa" data-i18n="Extended_away"></li>\n' +
-'            <li data-pres="dnd" class="jsxc_dnd" data-i18n="dnd"></li>\n' +
-'            <li data-pres="offline" class="jsxc_offline" data-i18n="Offline"></li>\n' +
-'         </ul>\n' +
+'         <span data-i18n="Offline">Offline</span>\n' +
+'         <div class="jsxc_inner">\n' +
+'            <ul>\n' +
+'               <li data-pres="online" class="jsxc_online" data-i18n="Online"></li>\n' +
+'               <li data-pres="chat" class="jsxc_chat" data-i18n="Chatty"></li>\n' +
+'               <li data-pres="away" class="jsxc_away" data-i18n="Away"></li>\n' +
+'               <li data-pres="xa" class="jsxc_xa" data-i18n="Extended_away"></li>\n' +
+'               <li data-pres="dnd" class="jsxc_dnd" data-i18n="dnd"></li>\n' +
+'               <li data-pres="offline" class="jsxc_offline" data-i18n="Offline"></li>\n' +
+'            </ul>\n' +
+'         </div>\n' +
 '      </div>\n' +
 '   </div>\n' +
 '   <div id="jsxc_toggleRoster"></div>\n' +
 '</div>\n' +
 '';
 
-jsxc.gui.template['rosterBuddy'] = '<li>\n' +
+jsxc.gui.template['rosterBuddy'] = '<li class="jsxc_rosteritem">\n' +
 '   <div class="jsxc_avatar">☺</div>\n' +
-'   <div class="jsxc_control"></div>\n' +
-'   <div class="jsxc_unread" />\n' +
-'   <div class="jsxc_name" />\n' +
-'   <div class="jsxc_options jsxc_right">\n' +
-'      <!--<div class="jsxc_rename" data-i18n="[title]rename_buddy">✎</div>\n' +
-'      <div class="jsxc_delete" data-i18n="[title]delete_buddy">✘</div>-->\n' +
+'   <div class="jsxc_more" />\n' +
+'   <div class="jsxc_caption">\n' +
+'      <div class="jsxc_name" />\n' +
+'      <div class="jsxc_lastmsg">\n' +
+'         <span class="jsxc_unread" />\n' +
+'         <span class="jsxc_text" />\n' +
+'      </div>\n' +
 '   </div>\n' +
-'   <div class="jsxc_options jsxc_left">\n' +
-'      <div class="jsxc_chaticon" data-i18n="[title]send_message" />\n' +
-'      <div class="jsxc_vcardicon" data-i18n="[title]get_info">i</div>\n' +
+'   <div class="jsxc_menu">\n' +
+'      <ul>\n' +
+'         <!--<li><a class="jsxc_rename" href="#"><span class="jsxc_icon jsxc_editicon"></span><span data-i18n="rename_buddy"></span></a></li>-->\n' +
+'         <li><a class="jsxc_vcard" href=""><span class="jsxc_icon jsxc_infoicon"></span><span data-i18n="get_info"></span></a></li>\n' +
+'         <!--<li><a class="jsxc_delete" href=""><span class="jsxc_icon jsxc_deleteicon"></span><span data-i18n="delete_buddy"></span></a></li>-->\n' +
+'      </ul>\n' +
 '   </div>\n' +
 '</li>\n' +
 '';
@@ -9438,8 +9742,8 @@ jsxc.gui.template['rosterBuddy'] = '<li>\n' +
 jsxc.gui.template['selectionDialog'] = '<h3></h3>\n' +
 '<p></p>\n' +
 '\n' +
-'<button class="btn btn-primary pull-right jsxc_close" data-i18n="Confirm"></button>\n' +
-'<button class="btn btn-default pull-right jsxc_close" data-i18n="Dismiss"></button>\n' +
+'<button class="btn btn-primary pull-right" data-i18n="Confirm"></button>\n' +
+'<button class="btn btn-default pull-right" data-i18n="Dismiss"></button>\n' +
 '';
 
 jsxc.gui.template['settings'] = '<form class="form-horizontal">\n' +
@@ -9568,7 +9872,7 @@ jsxc.gui.template['vCard'] = '<h3>\n' +
 '</p>\n' +
 '';
 
-jsxc.gui.template['videoWindow'] = '<div class="jsxc_webrtc">\n' +
+jsxc.gui.template['videoWindow'] = '<div id="jsxc_webrtc">\n' +
 '   <div class="jsxc_chatarea">\n' +
 '      <ul></ul>\n' +
 '   </div>\n' +
@@ -9586,20 +9890,12 @@ jsxc.gui.template['videoWindow'] = '<div class="jsxc_webrtc">\n' +
 '            <div></div>\n' +
 '         </div>\n' +
 '      </div>\n' +
-'   </div>\n' +
-'   <div class="jsxc_controlbar">\n' +
-'      <button class="btn btn-default jsxc_showchat" data-i18n="chat"></button>\n' +
-'      <button class="btn btn-primary jsxc_hangUp" data-i18n="hang_up"></button>\n' +
-'      <input type="range" class="jsxc_volume" min="0.0" max="1.0" step="0.05" value="0.5" style="width: 150px" />\n' +
-'      <div class="btn-group">\n' +
-'         <button class="btn btn-default jsxc_snapshot" data-i18n="snapshot"></button>\n' +
-'         <button class="btn btn-default jsxc_snapshots">&#9660;</button>\n' +
+'      <div class="jsxc_controlbar">\n' +
+'         <div>\n' +
+'            <div class="jsxc_hangUp jsxc_videoControl" />\n' +
+'            <div class="jsxc_fullscreen jsxc_videoControl" />\n' +
+'         </div>\n' +
 '      </div>\n' +
-'      <!-- <button type="button" class="jsxc_mute_local" data-i18n="mute_my_audio"></button>\n' +
-'                <button type="button" class="jsxc_pause_local" data-i18n="pause_my_video"></button> -->\n' +
-'      <button class="btn btn-default jsxc_fullscreen" data-i18n="fullscreen"></button>\n' +
-'      <button class="btn btn-default jsxc_info" data-i18n="Info"></button>\n' +
-'\n' +
 '   </div>\n' +
 '   <div class="jsxc_multi">\n' +
 '      <div class="jsxc_snapshotbar">\n' +
