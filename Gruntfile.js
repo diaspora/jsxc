@@ -68,7 +68,7 @@ module.exports = function(grunt) {
             src: ['<%= target %>/jsxc.js'],
             overwrite: true,
             replacements: [{
-               from: '< $ dep.libraries $ >',
+               from: '<$ dep.libraries $>',
                to: function() {
                   var i, d, libraries = '';
 
@@ -100,6 +100,23 @@ module.exports = function(grunt) {
             replacements: [{
                from: 'var jsxc.gui.template = {};',
                to: ''
+            }]
+         },
+         imageUrl: {
+            src: ['<%= target %>/css/*.css'],
+            overwrite: true,
+            replacements: [{
+               from: /image-url\(["'](.+)["']\)/g,
+               to: 'url(\'../img/$1\')'
+            }]
+         },
+         // IE 10 does not like comments starting with @
+         todo: {
+            src: ['build/jsxc.js'],
+            overwrite: true,
+            replacements: [{
+               from: /\/\/@(.*)/g,
+               to: '//$1'
             }]
          }
       },
@@ -246,9 +263,6 @@ module.exports = function(grunt) {
          },
       },
       sass: {
-         options: {
-            imagePath: '../img'
-         },
          dist: {
             files: {
                '<%= target %>/css/jsxc.css': 'scss/jsxc.scss',
@@ -263,7 +277,7 @@ module.exports = function(grunt) {
          },
          css: {
             files: ['scss/*'],
-            tasks: ['sass', 'autoprefixer']
+            tasks: ['sass', 'autoprefixer', 'replace:imageUrl']
          },
          js: {
             files: ['src/jsxc.lib.*'],
@@ -373,12 +387,12 @@ module.exports = function(grunt) {
    //Default task
    grunt.registerTask('default', ['build', 'watch']);
 
-   grunt.registerTask('build', ['jshint', 'clean', 'sass', 'autoprefixer', 'copy', 'merge_data', 'replace:locales', 'htmlConvert', 'replace:template', 'concat']);
+   grunt.registerTask('build', ['jshint', 'clean', 'sass', 'replace:imageUrl', 'autoprefixer', 'copy', 'merge_data', 'replace:locales', 'htmlConvert', 'replace:template', 'concat']);
 
    grunt.registerTask('build:prerelease', 'Build a new pre-release', function() {
       grunt.config.set('target', 'build');
 
-      grunt.task.run(['search:console', 'build', 'dataUri', 'usebanner', 'replace:version', 'replace:libraries', 'uglify', 'compress']);
+      grunt.task.run(['search:console', 'build', 'dataUri', 'usebanner', 'replace:version', 'replace:libraries', 'replace:todo', 'uglify', 'compress']);
    });
 
    grunt.registerTask('build:release', 'Build a new release', function() {
