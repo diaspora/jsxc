@@ -1,5 +1,5 @@
 /*!
- * jsxc v2.1.4 - 2015-10-09
+ * jsxc v2.1.4 - 2015-10-10
  * 
  * Copyright (c) 2015 Klaus Herberth <klaus@jsxc.org> <br>
  * Released under the MIT license
@@ -3844,7 +3844,7 @@ jsxc.gui.roster = {
          right: ((roster_width + roster_right) * -1) + 'px'
       }, duration).promise();
       wl.animate({
-         right: (10 - roster_right) + 'px'
+         right: (30 - roster_right) + 'px'
       }, duration).promise().done(function() {
          jsxc.gui.updateWindowListSB();
       });
