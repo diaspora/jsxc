@@ -1772,7 +1772,7 @@ jsxc.gui.roster = {
          right: ((roster_width + roster_right) * -1) + 'px'
       }, duration).promise();
       wl.animate({
-         right: (10 - roster_right) + 'px'
+         right: (30 - roster_right) + 'px'
       }, duration).promise().done(function() {
          jsxc.gui.updateWindowListSB();
       });

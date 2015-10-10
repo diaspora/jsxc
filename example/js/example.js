@@ -1,7 +1,7 @@
 $(function() {
    var settings = {
       xmpp: {
-         url: '/http-bind/',
+         url: 'http://localhost:5280/http-bind',
          domain: 'localhost',
          resource: 'example',
          overwrite: true,
