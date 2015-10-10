@@ -1,9 +1,8 @@
 #jsxc_roster {
     position: fixed;
-    top: 50px;
+    top: $navbar-height; // using diaspora b3 variables
     bottom: 0;
     right: 0;
-    width: 220px;
     overflow: visible;
     border-left: 1px solid #e1e1e1;
 
