@@ -1,5 +1,5 @@
 /*!
- * jsxc v2.1.4 - 2015-10-10
+ * jsxc v2.1.4 - 2015-10-21
  * 
  * Copyright (c) 2015 Klaus Herberth <klaus@jsxc.org> <br>
  * Released under the MIT license
@@ -3859,8 +3859,6 @@ jsxc.gui.roster = {
     */
    noConnection: function() {
       if ($('#jsxc_roster').hasClass('jsxc_noConnection')) { return; }
-
-      $('#jsxc_roster').addClass('jsxc_noConnection');
 
       $('#jsxc_buddylist').empty();
 

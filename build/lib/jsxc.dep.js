@@ -1,5 +1,5 @@
 /*!
- * jsxc v2.1.4 - 2015-10-10
+ * jsxc v2.1.4 - 2015-10-21
  * 
  * This file concatenates all dependencies of jsxc.
  * 
