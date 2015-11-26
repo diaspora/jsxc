@@ -273,11 +273,12 @@ jsxc = {
          if (!jsxc.isLoginForm()) {
 
             if (jsxc.options.displayRosterMinimized()) {
-               // Show minimized roster
                jsxc.storage.setUserItem('roster', 'hidden');
-               jsxc.gui.roster.init();
-               jsxc.gui.roster.noConnection();
+            } else if (jsxc.storage.getUserItem('roster') === undefined)  {
+               jsxc.storage.setUserItem('roster', 'shown');
             }
+            jsxc.gui.roster.init();
+            jsxc.gui.roster.noConnection();
 
             return;
          }
