@@ -27,7 +27,7 @@
     "grunt-contrib-qunit": "^0.5.2",
     "grunt-contrib-uglify": "^0.6.0",
     "grunt-contrib-watch": "^0.6.1",
-    "grunt-data-uri": "git+https://github.com/Zauberstuhl/grunt-data-uri.git",
+    "grunt-data-uri": "~> 0.3.0",
     "grunt-html-convert": "0.0.2",
     "grunt-jsbeautifier": "^0.2.10",
     "grunt-jsdoc": "^0.5.7",
