@@ -233,8 +233,8 @@
     }
 }
 
-#jsxc_roster > & {
-    &.jsxc_bottom {
+#jsxc_roster > {
+    .jsxc_bottom {
         position: absolute;
         left: 0;
         bottom: 0;
@@ -294,11 +294,11 @@
         }
     }
 
-    &.jsxc_bottom > div > span {
+    .jsxc_bottom > div > span {
         cursor: pointer;
     }
 
-    &.jsxc_bottom > div:hover {
+    .jsxc_bottom > div:hover {
         /*color: $roster_bottom_color_hover;*/
     }
 }

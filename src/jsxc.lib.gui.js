@@ -1469,9 +1469,11 @@ jsxc.gui.roster = {
          }
       });
 
+      var jsxc_roster_top = $('#jsxc_roster').css('top');
+      jsxc_roster_top = parseInt((jsxc_roster_top === undefined)? 0 : jsxc_roster_top);
       $('#jsxc_buddylist').slimScroll({
          distance: '3px',
-         height: ($('#jsxc_roster').height() - 31) + 'px',
+         height: ($('#jsxc_roster').height() - jsxc_roster_top) + 'px',
          width: $('#jsxc_buddylist').width() + 'px',
          color: '#fff',
          opacity: '0.5'
