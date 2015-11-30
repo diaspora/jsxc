@@ -1497,11 +1497,11 @@ jsxc.gui.roster = {
          $('#jsxc_windowList').css('right', '30px');
       }
 
-      var pres = jsxc.storage.getUserItem('presence') || 'offline';
+      var pres = 'offline';
       jsxc.storage.setUserItem('presence', pres);
       // switch presence if connection restored
-      $(document).on('restoreCompleted.jsxc', function() {
-        jsxc.storage.setUserItem('presence', 'online');
+      $(document).on('connected.jsxc attached.jsxc', function() {
+        jsxc.gui.changePresence('online', false);
       });
 
       $('#jsxc_presence > span').text($('#jsxc_presence .jsxc_' + pres).text());
