@@ -1,5 +1,5 @@
 /*!
- * jsxc v2.1.4 - 2015-10-21
+ * jsxc v2.1.4 - 2015-11-30
  * 
  * Copyright (c) 2015 Klaus Herberth <klaus@jsxc.org> <br>
  * Released under the MIT license
@@ -293,11 +293,12 @@ jsxc = {
          if (!jsxc.isLoginForm()) {
 
             if (jsxc.options.displayRosterMinimized()) {
-               // Show minimized roster
                jsxc.storage.setUserItem('roster', 'hidden');
-               jsxc.gui.roster.init();
-               jsxc.gui.roster.noConnection();
+            } else if (jsxc.storage.getUserItem('roster') === undefined)  {
+               jsxc.storage.setUserItem('roster', 'shown');
             }
+            jsxc.gui.roster.init();
+            jsxc.gui.roster.noConnection();
 
             return;
          }
@@ -3541,9 +3542,11 @@ jsxc.gui.roster = {
          }
       });
 
+      var jsxc_roster_top = $('#jsxc_roster').css('top');
+      jsxc_roster_top = parseInt((jsxc_roster_top === undefined)? 0 : jsxc_roster_top);
       $('#jsxc_buddylist').slimScroll({
          distance: '3px',
-         height: ($('#jsxc_roster').height() - 31) + 'px',
+         height: ($('#jsxc_roster').height() - jsxc_roster_top) + 'px',
          width: $('#jsxc_buddylist').width() + 'px',
          color: '#fff',
          opacity: '0.5'
@@ -3567,13 +3570,13 @@ jsxc.gui.roster = {
          $('#jsxc_windowList').css('right', '30px');
       }
 
-      var pres = jsxc.storage.getUserItem('presence') || 'offline';
-      // If there is no established connection
-      // we have to reset old localStorage data
-      if (jsxc.xmpp.conn === null) {
-        pres = 'offline';
-        jsxc.storage.setUserItem('presence', pres);
-      }
+      var pres = 'offline';
+      jsxc.storage.setUserItem('presence', pres);
+      // switch presence if connection restored
+      $(document).on('connected.jsxc attached.jsxc', function() {
+        jsxc.gui.changePresence('online', false);
+      });
+
       $('#jsxc_presence > span').text($('#jsxc_presence .jsxc_' + pres).text());
       jsxc.gui.updatePresence('own', pres);
 
@@ -5404,12 +5407,6 @@ jsxc.muc = {
          // update member list position
          jsxc.muc.scrollMemberListBy(bid, 0);
       });
-
-      // update emoticon button
-      setTimeout(function() {
-         var top = win.find('.jsxc_emoticons').position().top + win.find('.slimScrollDiv').position().top;
-         win.find('.jsxc_emoticons').css('top', top + 'px');
-      }, 400);
 
       var destroy = $('<li>');
       destroy.text($.t('Destroy'));
@@ -9477,7 +9474,7 @@ jsxc.gui.template['bookmarkDialog'] = '<h3 data-i18n="Edit_bookmark"></h3>\n' +
 jsxc.gui.template['chatWindow'] = '<li class="jsxc_windowItem">\n' +
 '   <div class="jsxc_window">\n' +
 '      <div class="jsxc_bar">\n' +
-'         <div class="jsxc_avatar">☺</div>\n' +
+'         <div class="jsxc_avatar"></div>\n' +
 '         <div class="jsxc_tools">\n' +
 '            <div class="jsxc_settings">\n' +
 '               <div class="jsxc_more"></div>\n' +
@@ -9718,7 +9715,7 @@ jsxc.gui.template['roster'] = '<div id="jsxc_roster">\n' +
 '';
 
 jsxc.gui.template['rosterBuddy'] = '<li class="jsxc_rosteritem">\n' +
-'   <div class="jsxc_avatar">☺</div>\n' +
+'   <div class="jsxc_avatar"></div>\n' +
 '   <div class="jsxc_more" />\n' +
 '   <div class="jsxc_caption">\n' +
 '      <div class="jsxc_name" />\n' +
