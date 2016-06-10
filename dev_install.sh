@@ -5,7 +5,7 @@ JROOT=$PWD;
 
 if [ "$DROOT" == "" ];
 then
-  echo "$0 <absolute-diaspora-directory>";
+  echo "$0 <absolute-diaspora-directory> ([skip-build])";
   exit 1;
 fi
 
@@ -15,16 +15,14 @@ echo "Please make sure that you provided an absolute path
 to the diaspora installation!
 (hit CTRL+C to abort) "; read;
 
-cd $JROOT && \
-  npm install && \
-  node_modules/.bin/grunt build:prerelease
-
-# "main": [
-#   "build/lib/jsxc.dep.js",
-#   "build/jsxc.min.js",
-#   "build/css/jsxc.css",
-#   "build/css/jsxc.webrtc.css"
-# ],
+if [ "$2" == "" ]; then
+  cd $JROOT && \
+    npm install && \
+    bower install && \
+    node_modules/.bin/grunt build:prerelease
+else
+  echo "! Skipping build"
+fi
 
 GPATH=$(bash -lc "cd $DROOT; bundle show rails-assets-diaspora_jsxc");
 JSPATH="${GPATH}/app/assets/javascripts/diaspora_jsxc";
