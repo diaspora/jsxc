@@ -21,6 +21,10 @@ jsxc.storage = {
    getPrefix: function(uk) {
       var self = jsxc.storage;
 
+      if (uk && !jsxc.bid) {
+         console.trace('Unable to create user prefix');
+      }
+
       return self.PREFIX + self.SEP + ((uk && jsxc.bid) ? jsxc.bid + self.SEP : '');
    },
 
@@ -35,7 +39,7 @@ jsxc.storage = {
    setItem: function(key, value, uk) {
 
       // Workaround for non-conform browser
-      if (jsxc.storageNotConform > 0 && key !== 'rid' && key !== 'lastActivity') {
+      if (jsxc.storageNotConform > 0 && key !== 'rid') {
          if (jsxc.storageNotConform > 1 && jsxc.toSNC === null) {
             jsxc.toSNC = window.setTimeout(function() {
                jsxc.storageNotConform = 0;
@@ -120,8 +124,8 @@ jsxc.storage = {
     */
    removeItem: function(key, uk) {
 
-      // Workaround for non-conform browser
-      if (jsxc.storageNotConform && key !== 'rid' && key !== 'lastActivity') {
+      // Workaround for non-conforming browser
+      if (jsxc.storageNotConform && key !== 'rid') {
          jsxc.ls.push(JSON.stringify({
             key: jsxc.storage.prefix + key,
             value: ''
@@ -185,10 +189,11 @@ jsxc.storage = {
    /**
     * Updates value of a variable in a saved user object.
     * 
-    * @param {String} key variablename
-    * @param {String|object} variable variablename in object or object with
+    * @param {String} type variable type (a prefix)
+    * @param {String} key variable name
+    * @param {String|object} variable variable name in object or object with
     *        variable/key pairs
-    * @param {Object} [value] value
+    * @param {Object} [value] value (not used if the variable was an object)
     */
    updateUserItem: function(type, key, variable, value) {
       var self = jsxc.storage;
@@ -205,7 +210,7 @@ jsxc.storage = {
    },
 
    /**
-    * Inkrements value
+    * Increments value
     * 
     * @function
     * @param {String} key variablename
@@ -255,8 +260,8 @@ jsxc.storage = {
     * Triggered if changes are recognized
     * 
     * @function
-    * @param {event} e Storageevent
-    * @param {String} e.key Keyname which triggered event
+    * @param {event} e Storage event
+    * @param {String} e.key Key name which triggered event
     * @param {Object} e.oldValue Old Value for key
     * @param {Object} e.newValue New Value for key
     * @param {String} e.url
@@ -264,14 +269,15 @@ jsxc.storage = {
    onStorage: function(e) {
 
       // skip
-      if (e.key === jsxc.storage.PREFIX + jsxc.storage.SEP + 'rid' || e.key === jsxc.storage.PREFIX + jsxc.storage.SEP + 'lastActivity') {
+      if (e.key === jsxc.storage.PREFIX + jsxc.storage.SEP + 'rid') {
          return;
       }
 
       var re = new RegExp('^' + jsxc.storage.PREFIX + jsxc.storage.SEP + '(?:[^' + jsxc.storage.SEP + ']+@[^' + jsxc.storage.SEP + ']+' + jsxc.storage.SEP + ')?(.*)', 'i');
       var key = e.key.replace(re, '$1');
 
-      // Workaround for non-conform browser: Triggered event on every page
+      // Workaround for non-conforming browser, which trigger
+      // events on every page (notably IE): Ignore own writes
       // (own)
       if (jsxc.storageNotConform > 0 && jsxc.ls.length > 0) {
 
@@ -299,7 +305,7 @@ jsxc.storage = {
          }
       }
 
-      // Workaround for non-conform browser
+      // Workaround for non-conforming browser
       if (e.oldValue === e.newValue) {
          return;
       }
@@ -307,7 +313,7 @@ jsxc.storage = {
       var n, o;
       var bid = key.replace(new RegExp('[^' + jsxc.storage.SEP + ']+' + jsxc.storage.SEP + '(.*)', 'i'), '$1');
 
-      // react if someone ask, if there is a master
+      // react if someone asks whether there is a master
       if (jsxc.master && key === 'alive') {
          jsxc.debug('Master request.');
 
@@ -318,9 +324,13 @@ jsxc.storage = {
       // master alive
       if (!jsxc.master && (key === 'alive' || key === 'alive_busy') && !jsxc.triggeredFromElement) {
 
-         // reset timeout
-         window.clearTimeout(jsxc.to);
-         jsxc.to = window.setTimeout(jsxc.checkMaster, ((key === 'alive') ? jsxc.options.timeout : jsxc.options.busyTimeout) + jsxc.random(60));
+         // reset timeouts
+         jsxc.to = $.grep(jsxc.to, function(timeout) {
+            window.clearTimeout(timeout);
+
+            return false;
+         });
+         jsxc.to.push(window.setTimeout(jsxc.checkMaster, ((key === 'alive') ? jsxc.options.timeout : jsxc.options.busyTimeout) + jsxc.random(60)));
 
          // only call the first time
          if (!jsxc.role_allocation) {
@@ -364,22 +374,24 @@ jsxc.storage = {
          }
       }
 
-      if (key.match(new RegExp('^chat' + jsxc.storage.SEP))) {
+      if (key.match(new RegExp('^history' + jsxc.storage.SEP))) {
 
-         var posts = JSON.parse(e.newValue);
-         var data, el;
+         var history = JSON.parse(e.newValue);
+         var uid, el, message;
 
-         while (posts.length > 0) {
-            data = posts.pop();
-            el = $('#' + data.uid);
+         while (history.length > 0) {
+            uid = history.pop();
+
+            message = new jsxc.Message(uid);
+            el = message.getDOM();
 
             if (el.length === 0) {
-               if (jsxc.master && data.direction === 'out') {
-                  jsxc.xmpp.sendMessage(bid, data.msg, data.uid);
+               if (jsxc.master && message.direction === jsxc.Message.OUT) {
+                  jsxc.xmpp.sendMessage(message.bid, message.msg, message._uid);
                }
 
-               jsxc.gui.window._postMessage(bid, data);
-            } else if (data.received) {
+               jsxc.gui.window._postMessage(message, true);
+            } else if (message.isReceived()) {
                el.addClass('jsxc_received');
             }
          }
@@ -430,7 +442,8 @@ jsxc.storage = {
 
          if (!e.newValue) {
 
-            jsxc.gui.dialog.close();
+            jsxc.gui.dialog.close('smp');
+            jsxc.gui.window.hideOverlay(bid);
 
             if (jsxc.master) {
                jsxc.otr.objects[bid].sm.abort();
@@ -443,10 +456,11 @@ jsxc.storage = {
 
          if (typeof(n.data) !== 'undefined') {
 
-            jsxc.otr.onSmpQuestion(bid, n.data);
+            jsxc.gui.window.smpRequest(bid, n.data);
 
          } else if (jsxc.master && n.sec) {
-            jsxc.gui.dialog.close();
+            jsxc.gui.dialog.close('smp');
+            jsxc.gui.window.hideOverlay(bid);
 
             jsxc.otr.sendSmpReq(bid, n.sec, n.quest);
          }
@@ -529,7 +543,7 @@ jsxc.storage = {
       }
 
       if (key === 'roster') {
-         jsxc.gui.roster.toggle();
+         jsxc.gui.roster.toggle(e.newValue);
       }
 
       if (jsxc.master && key.match(new RegExp('^vcard' + jsxc.storage.SEP)) && e.newValue !== null && e.newValue.match(/^request:/)) {
@@ -555,44 +569,6 @@ jsxc.storage = {
 
          jsxc.storage.removeUserItem('vcard', bid);
       }
-   },
-
-   /**
-    * Save message to storage.
-    * 
-    * @memberOf jsxc.storage
-    * @param bid
-    * @param direction
-    * @param msg
-    * @param encrypted
-    * @param forwarded
-    * @param sender
-    * @return post
-    */
-   saveMessage: function(bid, direction, msg, encrypted, forwarded, stamp, sender) {
-      var chat = jsxc.storage.getUserItem('chat', bid) || [];
-
-      var uid = new Date().getTime() + ':msg';
-
-      if (chat.length > jsxc.options.get('numberOfMsg')) {
-         chat.pop();
-      }
-
-      var post = {
-         direction: direction,
-         msg: msg,
-         uid: uid.replace(/:/, '-'),
-         received: false,
-         encrypted: encrypted || false,
-         forwarded: forwarded || false,
-         stamp: stamp || new Date().getTime(),
-         sender: sender
-      };
-
-      chat.unshift(post);
-      jsxc.storage.setUserItem('chat', bid, chat);
-
-      return post;
    },
 
    /**

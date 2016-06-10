@@ -6,6 +6,7 @@
     width: 205px;
     overflow: visible;
     border-left: 1px solid #e1e1e1;
+    display: none;
 
     /*border-left: 1px solid $roster_border_left;*/
     z-index: 80;
@@ -44,13 +45,13 @@
 
     input {
         position: absolute;
-        top: 50%;
-        left: 31px;
-        width: 157px;
-        height: 18px;
-        margin-top: -11px;
-        padding: 2px;
-        border: 0;
+        margin: 0;
+        height: 35px;
+        padding: 7px 6px 5px;
+        font-size: 13px;
+        width: 145px;
+        border: 1px solid #ddd;
+        box-sizing: border-box;
         background-image: none;
         background-color: $roster_input_bg;
         border-radius: 3px;
@@ -93,11 +94,21 @@
     }
 
     &.jsxc_state_hidden {
+        display: block;
+        right: -200px;
+        transition: right 0.5s;
+
         #jsxc_toggleRoster {
             &:before {
                 transform: rotate(0deg);
             }
         }
+    }
+
+    &.jsxc_state_shown {
+        display: block;
+        right: 0px;
+        transition: right 0.5s;
     }
 }
 
@@ -161,12 +172,6 @@
             background-repeat: no-repeat;
             background-image: image-url("bookmark_red.svg");
         }
-
-        .jsxc_bookmarkOptions {
-            text-indent: 9999px;
-            background-image: image-url("gear_white.svg");
-            background-size: 15px 15px;
-        }
     }
 }
 
@@ -183,25 +188,37 @@
     }
 
     .jsxc_name {
-        height: 50%;
-        line-height: 17.5px;
+        height: 100%;
+        line-height: 40px;
 
-        .jsxc_normal & {
-            height: 100%;
-            line-height: 35px;
+        .jsxc_min & {
+            height: 50%;
+            line-height: 20px;
+        }
+
+        .jsxc_rosteritem & {
+            height: 50%;
+            line-height: 20px;
         }
     }
 
     .jsxc_lastmsg {
         font-size: 12px;
-        height: 50%;
-        line-height: 17.5px;
+        display: none;
         text-overflow: ellipsis;
         white-space: nowrap;
         overflow: hidden;
 
-        .jsxc_normal & {
-            display: none;
+        .jsxc_min & {
+            display: block;
+            height: 50%;
+            line-height: 17.5px;
+        }
+
+        .jsxc_rosteritem & {
+            display: block;
+            height: 50%;
+            line-height: 17.5px;
         }
 
         .jsxc_text {
@@ -348,8 +365,8 @@
         height: 100%;
         background-image: image-url("menu_black.svg");
         background-repeat: no-repeat;
-        background-position: center center;
-        background-size: 60%;
+        background-position: center 10px;
+        background-size: 17px;
     }
 
     @media (min-width: 768px) {

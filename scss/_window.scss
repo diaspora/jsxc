@@ -4,6 +4,11 @@
     right: 230px;
     left: 0;
     z-index: 50;
+    transition: right 0.5s;
+
+    &.jsxc_roster_hidden {
+        right: 10px;
+    }
 
     @media (min-width: 768px) {
         clip: rect(-10000px, 10000px, 30px, 30px);
@@ -131,7 +136,7 @@
 
 .jsxc_window {
     position: absolute;
-    bottom: 0;
+    bottom: -284px;
     top: auto;
     left: 0;
     right: 0;
@@ -148,6 +153,12 @@
 
     .jsxc_normal & {
         transition: bottom 0.2s;
+    }
+
+    .jsxc_showOverlay & {
+        .jsxc_overlay {
+            display: block !important;
+        }
     }
 
     .jsxc_emoticons {
@@ -222,6 +233,76 @@
 
     .jsxc_fade {
         position: relative;
+
+        .jsxc_overlay {
+            display: none;
+            background-color: rgba(0, 0, 0, 0.5);
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            overflow-y: scroll;
+
+            & > div {
+                background-color: #fff;
+                margin: 30px 10px;
+                padding: 5px;
+                border-radius: 3px;
+                text-align: center;
+                position: relative;
+
+                .jsxc_close {
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    height: 44px;
+                    width: 44px;
+
+                    &:after {
+                        content: '×';
+                        position: absolute;
+                        top: 4px;
+                        right: 4px;
+                        font-size: 20px;
+                        font-family: Arial, sans-serif;
+                        cursor: pointer;
+                        color: #000;
+                        opacity: 0.4;
+                    }
+
+                    &:hover {
+                        &:after {
+                            opacity: 1;
+                        }
+                    }
+
+                    @media (min-width: 768px) {
+                        width: 30px;
+                        height: 30px;
+                    }
+                }
+
+                .jsxc_body {
+                    margin-top: 20px;
+                }
+
+                p {
+                    margin-bottom: 10px;
+                }
+
+                li {
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                a:hover {
+                    text-decoration: underline;
+                }
+            }
+        }
     }
 
     .jsxc_avatar {
@@ -274,10 +355,15 @@
             display: block;
             float: left;
             color: $tools_color;
+            opacity: 0.4;
             font-family: $font_sans;
             line-height: 40px;
             cursor: pointer;
             text-align: center;
+
+            &.jsxc_settings {
+                opacity: 1.0;
+            }
         }
     }
 
@@ -286,12 +372,13 @@
 
         &:hover {
             color: $window_close_hover;
+            opacity: 1.0;
         }
     }
 
     .jsxc_more {
         background-image: image-url("more_white.svg");
-        opacity: 0.7;
+        opacity: 0.4;
     }
 
     .ui-resizable-w {
@@ -320,8 +407,6 @@
 .jsxc_chatmessage {
     margin: 3px;
     padding: 4px;
-    padding-right: 10px;
-    max-width: 76%;
     word-wrap: break-word;
     background-color: $chatmessage_bg;
     position: relative;
@@ -331,16 +416,58 @@
     a {
         color: $chatmessage_a;
         text-decoration: underline;
+        display: inline-block;
     }
 
     img {
-        width: 19px;
-        height: 19px;
-        background-size: 19px 19px;
+        max-width: 100%;
     }
 
     .jsxc_avatar {
         display: none;
+    }
+
+    .jsxc_attachment {
+        border-radius: 3px;
+        background-color: #fff;
+        padding: 3px;
+        padding-left: 30px;
+        min-height: 30px;
+        margin-bottom: 5px;
+        background-position: 3px center;
+        background-size: 25px 25px;
+        background-repeat: no-repeat;
+        background-image: image-url("filetypes/file.svg");
+
+        img {
+            border-radius: 3px;
+        }
+
+        &.jsxc_image {
+            line-height: 0px;
+            padding: 0;
+            background-image: url();
+        }
+
+        &.jsxc_application {
+            background-image: image-url("filetypes/application.svg");
+        }
+
+        &.jsxc_application-pdf {
+            background-image: image-url("filetypes/application-pdf.svg");
+        }
+
+        &.jsxc_audio {
+            background-image: image-url("filetypes/audio.svg");
+        }
+
+        &.jsxc_video {
+            background-image: image-url("filetypes/video.svg");
+        }
+
+        &.jsxc_text {
+            background-image: image-url("filetypes/text.svg");
+        }
     }
 }
 
@@ -352,11 +479,30 @@
     white-space: nowrap;
     max-width: 100%;
     text-overflow: ellipsis;
+    clear: both;
+}
+
+.jsxc_encrypted {
+    &.jsxc_received.jsxc_out .jsxc_timestamp {
+        margin-right: 1px;
+    }
+
+    .jsxc_timestamp:after {
+        content: " ";
+        display: inline-block;
+        width: 10px;
+        height: 8px;
+        margin-left: 2px;
+        background-image: image-url("padlock_close_grey.svg");
+        background-size: contain;
+        background-repeat: no-repeat;
+    }
 }
 
 .jsxc_in {
     float: left;
     position: relative;
+    max-width: 76%;
     margin-left: 10px;
     border-radius: 3px;
     background-color: $chatmessage_in_bg;
@@ -382,7 +528,9 @@
 .jsxc_out {
     float: right;
     position: relative;
+    max-width: 76%;
     margin-right: 10px;
+    padding-right: 10px;
     border-radius: 3px;
     background-color: $chatmessage_out_bg;
 
@@ -454,6 +602,15 @@ div.jsxc_transfer {
 
     &:hover {
         opacity: 1.0;
+    }
+
+    &.jsxc_disabled {
+        background-image: image-url("padlock_open_disabled_black.svg");
+        cursor: default;
+
+        &:hover {
+            opacity: 0.3;
+        }
     }
 
     &.jsxc_fin {

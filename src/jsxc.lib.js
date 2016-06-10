@@ -14,7 +14,7 @@ jsxc = {
    role_allocation: false,
 
    /** Timeout for keepalive */
-   to: null,
+   to: [],
 
    /** Timeout after normal keepalive starts */
    toBusy: null,
@@ -28,8 +28,8 @@ jsxc = {
    /** Interval for keep-alive */
    keepalive: null,
 
-   /** True if last activity was up to 10 min ago */
-   restore: false,
+   /** True if jid, sid and rid was used to connect */
+   reconnect: false,
 
    /** True if restore is complete */
    restoreCompleted: false,
@@ -71,12 +71,14 @@ jsxc = {
       },
       REGEX: {
          JID: new RegExp('\\b[^"&\'\\/:<>@\\s]+@[\\w-_.]+\\b', 'ig'),
-         URL: new RegExp(/((?:https?:\/\/|www\.|([\w\-]+\.[a-zA-Z]{2,3})(?=\b))(?:(?:[\-A-Za-z0-9+&@#\/%?=~_|!:,.;]*\([\-A-Za-z0-9+&@#\/%?=~_|!:,.;]*\)([\-A-Za-z0-9+&@#\/%?=~_|!:,.;]*[\-A-Za-z0-9+&@#\/%=~_|])?)|(?:[\-A-Za-z0-9+&@#\/%?=~_|!:,.;]*[\-A-Za-z0-9+&@#\/%=~_|]))?)/gi)
+         URL: new RegExp(/(https?:\/\/|www\.)[^\s<>'"]+/gi)
       },
       NS: {
          CARBONS: 'urn:xmpp:carbons:2',
          FORWARD: 'urn:xmpp:forward:0'
-      }
+      },
+      HIDDEN: 'hidden',
+      SHOWN: 'shown'
    },
 
    /**
@@ -88,20 +90,22 @@ jsxc = {
     */
    getFormattedTime: function(unixtime) {
       var msgDate = new Date(parseInt(unixtime));
-      var date = ('0' + msgDate.getDate()).slice(-2);
+      var day = ('0' + msgDate.getDate()).slice(-2);
       var month = ('0' + (msgDate.getMonth() + 1)).slice(-2);
       var year = msgDate.getFullYear();
       var hours = ('0' + msgDate.getHours()).slice(-2);
       var minutes = ('0' + msgDate.getMinutes()).slice(-2);
-      var dateNow = new Date(),
-         time = hours + ':' + minutes;
+      var dateNow = new Date();
+
+      var date = (typeof msgDate.toLocaleDateString === 'function') ? msgDate.toLocaleDateString() : day + '.' + month + '.' + year;
+      var time = (typeof msgDate.toLocaleTimeString === 'function') ? msgDate.toLocaleTimeString() : hours + ':' + minutes;
 
       // compare dates only
       dateNow.setHours(0, 0, 0, 0);
       msgDate.setHours(0, 0, 0, 0);
 
       if (dateNow.getTime() !== msgDate.getTime()) {
-         return date + '.' + month + '.' + year + ' ' + time;
+         return date + ' ' + time;
       }
       return time;
    },
@@ -137,10 +141,10 @@ jsxc = {
             }
          }
 
-         jsxc.log = jsxc.log + msg + ': ' + d + '\n';
+         jsxc.log = jsxc.log + '$ ' + msg + ': ' + d + '\n';
       } else {
          console.log(msg);
-         jsxc.log = jsxc.log + msg + '\n';
+         jsxc.log = jsxc.log + '$ ' + msg + '\n';
       }
    },
 
@@ -170,12 +174,27 @@ jsxc = {
    log: '',
 
    /**
-    * Starts the action
+    * This function initializes important core functions and event handlers. 
+    * Afterwards it performs the following actions in the given order:
+    *
+    * <ol>
+    *  <li>If (loginForm.ifFound = 'force' and form was found) or (jid or rid or 
+    * 	sid was not found) intercept form, and listen for credentials.</li>
+    *  <li>Attach with jid, rid and sid from storage, if no form was found or 
+    * 	loginForm.ifFound = 'attach'</li>
+    *  <li>Attach with jid, rid and sid from options.xmpp, if no form was found or 
+    * 	loginForm.ifFound = 'attach'</li>
+    * </ol>
     * 
     * @memberOf jsxc
-    * @param {object} options
+    * @param {object} options See {@link jsxc.options}
     */
    init: function(options) {
+
+      if (options && options.loginForm && typeof options.loginForm.attachIfFound === 'boolean' && !options.loginForm.ifFound) {
+         // translate deprated option attachIfFound found to new ifFound
+         options.loginForm.ifFound = (options.loginForm.attachIfFound) ? 'attach' : 'pause';
+      }
 
       if (options) {
          // override default options
@@ -195,9 +214,13 @@ jsxc = {
        * @returns default or saved option value
        */
       jsxc.options.get = function(key) {
-         var local = jsxc.storage.getUserItem('options') || {};
+         if (jsxc.bid) {
+            var local = jsxc.storage.getUserItem('options') || {};
 
-         return local[key] || jsxc.options[key];
+            return (typeof local[key] !== 'undefined') ? local[key] : jsxc.options[key];
+         }
+
+         return jsxc.options[key];
       };
 
       /**
@@ -243,27 +266,35 @@ jsxc = {
       // Register event listener for the storage event
       window.addEventListener('storage', jsxc.storage.onStorage, false);
 
-      var lastActivity = jsxc.storage.getItem('lastActivity') || 0;
-
-      if ((new Date()).getTime() - lastActivity < jsxc.options.loginTimeout) {
-         jsxc.restore = true;
-      }
-
-      $(document).on('connectionReady.jsxc', function() {
+      $(document).on('attached.jsxc', function() {
          // Looking for logout element
-         if (jsxc.options.logoutElement !== null && jsxc.options.logoutElement.length > 0) {
-            var logout = function() {
+         if (jsxc.options.logoutElement !== null && $(jsxc.options.logoutElement).length > 0) {
+            var logout = function(ev) {
+               if (!jsxc.xmpp.conn || !jsxc.xmpp.conn.authenticated) {
+                  return;
+               }
+
+               ev.stopPropagation();
+               ev.preventDefault();
+
                jsxc.options.logoutElement = $(this);
                jsxc.triggeredFromLogout = true;
-               return jsxc.xmpp.logout();
+
+               jsxc.xmpp.logout();
             };
+
+            jsxc.options.logoutElement = $(jsxc.options.logoutElement);
 
             jsxc.options.logoutElement.off('click', null, logout).one('click', logout);
          }
       });
 
+      var isStorageAttachParameters = jsxc.storage.getItem('rid') && jsxc.storage.getItem('sid') && jsxc.storage.getItem('jid');
+      var isOptionsAttachParameters = jsxc.options.xmpp.rid && jsxc.options.xmpp.sid && jsxc.options.xmpp.jid;
+      var isForceLoginForm = jsxc.options.loginForm && jsxc.options.loginForm.ifFound === 'force' && jsxc.isLoginForm();
+
       // Check if we have to establish a new connection
-      if (!jsxc.storage.getItem('rid') || !jsxc.storage.getItem('sid') || !jsxc.restore) {
+      if ((!isStorageAttachParameters && !isOptionsAttachParameters) || isForceLoginForm) {
 
          // clean up rid and sid
          jsxc.storage.removeItem('rid');
@@ -314,7 +345,7 @@ jsxc = {
                   if (enabled) {
                      jsxc.options.loginForm.triggered = true;
 
-                     jsxc.xmpp.login();
+                     jsxc.xmpp.login(jsxc.options.xmpp.jid, jsxc.options.xmpp.password);
                   }
                } else {
                   jsxc.submitLoginForm();
@@ -325,20 +356,66 @@ jsxc = {
             return false;
          });
 
-      } else if (!jsxc.isLoginForm() || (jsxc.options.loginForm && jsxc.options.loginForm.attachIfFound)) {
+      } else if (!jsxc.isLoginForm() || (jsxc.options.loginForm && jsxc.options.loginForm.ifFound === 'attach')) {
 
          // Restore old connection
 
-         jsxc.bid = jsxc.jidToBid(jsxc.storage.getItem('jid'));
-
-         jsxc.gui.init();
-
-         if (typeof(jsxc.storage.getItem('alive')) === 'undefined' || !jsxc.restore) {
+         if (typeof jsxc.storage.getItem('alive') !== 'number') {
             jsxc.onMaster();
          } else {
             jsxc.checkMaster();
          }
       }
+   },
+
+   /**
+    * Attach to previous session if jid, sid and rid are available 
+    * in storage or options (default behaviour also for {@link jsxc.init}).
+    *
+    * @memberOf jsxc
+    */
+   /**
+    * Start new chat session with given jid and password.
+    *
+    * @memberOf jsxc
+    * @param {string} jid Jabber Id
+    * @param {string} password Jabber password
+    */
+   /**
+    * Attach to new chat session with jid, sid and rid.
+    *
+    * @memberOf jsxc
+    * @param {string} jid Jabber Id
+    * @param {string} sid Session Id
+    * @param {string} rid Request Id
+    */
+   start: function() {
+      var args = arguments;
+
+      if (jsxc.role_allocation && !jsxc.master) {
+         jsxc.debug('There is an other master tab');
+
+         return false;
+      }
+
+      if (jsxc.xmpp.conn && jsxc.xmpp.connected) {
+         jsxc.debug('We are already connected');
+
+         return false;
+      }
+
+      if (args.length === 3) {
+         $(document).one('attached.jsxc', function() {
+            // save rid after first attachment
+            jsxc.xmpp.onRidChange(jsxc.xmpp.conn._proto.rid);
+
+            jsxc.onMaster();
+         });
+      }
+
+      jsxc.checkMaster(function() {
+         jsxc.xmpp.login.apply(this, args);
+      });
    },
 
    /**
@@ -465,6 +542,9 @@ jsxc = {
       jsxc.debug('I am the slave.');
 
       jsxc.role_allocation = true;
+      jsxc.bid = jsxc.jidToBid(jsxc.storage.getItem('jid'));
+
+      jsxc.gui.init();
 
       jsxc.restoreRoster();
       jsxc.restoreWindows();
@@ -484,74 +564,59 @@ jsxc = {
       // Init local storage
       jsxc.storage.setItem('alive', 0);
       jsxc.storage.setItem('alive_busy', 0);
-      if (!jsxc.storage.getUserItem('windowlist')) {
-         jsxc.storage.setUserItem('windowlist', []);
-      }
 
       // Sending keepalive signal
       jsxc.startKeepAlive();
 
-      if (jsxc.options.get('otr').enable) {
-         // create or load DSA key and call _onMaster
-         jsxc.otr.createDSA();
-      } else {
-         jsxc._onMaster();
-      }
-   },
-
-   /**
-    * Second half of the onMaster routine
-    */
-   _onMaster: function() {
-
-      // create otr objects, if we lost the master
-      if (jsxc.role_allocation) {
-         $.each(jsxc.storage.getUserItem('windowlist'), function(index, val) {
-            jsxc.otr.create(val);
-         });
-      }
-
       jsxc.role_allocation = true;
-
-      if (jsxc.restore && !jsxc.restoreCompleted) {
-         jsxc.restoreRoster();
-         jsxc.restoreWindows();
-         jsxc.restoreCompleted = true;
-
-         $(document).trigger('restoreCompleted.jsxc');
-      }
-
-      // Prepare notifications
-      if (jsxc.restore) {
-         var noti = jsxc.storage.getUserItem('notification');
-         noti = (typeof noti === 'number') ? noti : 2;
-         if (jsxc.options.notification && noti > 0 && jsxc.notification.hasSupport()) {
-            if (jsxc.notification.hasPermission()) {
-               jsxc.notification.init();
-            } else {
-               jsxc.notification.prepareRequest();
-            }
-         } else {
-            // No support => disable
-            jsxc.options.notification = false;
-         }
-      }
-
-      $(document).on('connectionReady.jsxc', function() {
-         jsxc.gui.updateAvatar($('#jsxc_roster > .jsxc_bottom'), jsxc.jidToBid(jsxc.storage.getItem('jid')), 'own');
-      });
 
       jsxc.xmpp.login();
    },
 
    /**
     * Checks if there is a master
+    *
+    * @param {function} [cb] Called if no master was found.
     */
-   checkMaster: function() {
+   checkMaster: function(cb) {
       jsxc.debug('check master');
 
-      jsxc.to = window.setTimeout(jsxc.onMaster, 1000);
-      jsxc.storage.ink('alive');
+      cb = (cb && typeof cb === 'function') ? cb : jsxc.onMaster;
+
+      if (typeof jsxc.storage.getItem('alive') !== 'number') {
+         cb.call();
+      } else {
+         jsxc.to.push(window.setTimeout(cb, 1000));
+         jsxc.storage.ink('alive');
+      }
+   },
+
+   masterActions: function() {
+
+      if (!jsxc.xmpp.conn || !jsxc.xmpp.conn.authenticated) {
+         return;
+      }
+
+      //prepare notifications
+      var noti = jsxc.storage.getUserItem('notification');
+      noti = (typeof noti === 'number') ? noti : 2;
+      if (jsxc.options.notification && noti > 0 && jsxc.notification.hasSupport()) {
+         if (jsxc.notification.hasPermission()) {
+            jsxc.notification.init();
+         } else {
+            jsxc.notification.prepareRequest();
+         }
+      } else {
+         // No support => disable
+         jsxc.options.notification = false;
+      }
+
+      if (jsxc.options.get('otr').enable) {
+         // create or load DSA key
+         jsxc.otr.createDSA();
+      }
+
+      jsxc.gui.updateAvatar($('#jsxc_roster > .jsxc_bottom'), jsxc.jidToBid(jsxc.storage.getItem('jid')), 'own');
    },
 
    /**
@@ -566,10 +631,6 @@ jsxc = {
     */
    keepAlive: function() {
       jsxc.storage.ink('alive');
-
-      if (jsxc.role_allocation) {
-         jsxc.storage.setItem('lastActivity', (new Date()).getTime());
-      }
    },
 
    /**
@@ -667,22 +728,22 @@ jsxc = {
       }
 
       $.each(windows, function(index, bid) {
-         var window = jsxc.storage.getUserItem('window', bid);
+         var win = jsxc.storage.getUserItem('window', bid);
 
-         if (!window) {
+         if (!win) {
             jsxc.debug('Associated window-element is missing: ' + bid);
             return true;
          }
 
          jsxc.gui.window.init(bid);
 
-         if (!window.minimize) {
+         if (!win.minimize) {
             jsxc.gui.window.show(bid);
          } else {
             jsxc.gui.window.hide(bid);
          }
 
-         jsxc.gui.window.setText(bid, window.text);
+         jsxc.gui.window.setText(bid, win.text);
       });
    },
 
