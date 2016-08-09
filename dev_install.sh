@@ -24,7 +24,7 @@ else
   echo "! Skipping build"
 fi
 
-GPATH=$(bash -lc "cd $DROOT; bundle show rails-assets-diaspora_jsxc");
+GPATH=$(bash -lc "cd $DROOT; rvm use 2.2.5 > /dev/null; bundle show rails-assets-diaspora_jsxc");
 JSPATH="${GPATH}/app/assets/javascripts/diaspora_jsxc";
 CSPATH="${GPATH}/app/assets/stylesheets/diaspora_jsxc";
 
@@ -33,8 +33,7 @@ echo -e "\nCopying files to installation directory:";
 cd $JROOT && \
   cp -vf build/lib/jsxc.dep.js ${JSPATH}/lib/jsxc.dep.js && \
   cp -vf build/jsxc.min.js ${JSPATH}/jsxc.min.js && \
-  cp -vf build/css/jsxc.css ${CSPATH}/jsxc.scss && \
-  cp -vf build/css/jsxc.webrtc.css ${CSPATH}/jsxc.webrtc.scss
+  cp -vf build/css/jsxc.css ${CSPATH}/jsxc.scss
 
 echo -e "\nDone";
 
