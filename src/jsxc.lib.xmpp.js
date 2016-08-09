@@ -11,6 +11,7 @@ jsxc.xmpp = {
     * 
     * @name login
     * @memberOf jsxc.xmpp
+    * @private
     */
    /**
     * Create new connection with given parameters.
@@ -19,6 +20,7 @@ jsxc.xmpp = {
     * @param {string} jid
     * @param {string} password
     * @memberOf jsxc.xmpp
+    * @private
     */
    /**
     * Attach connection with given parameters.
@@ -28,10 +30,12 @@ jsxc.xmpp = {
     * @param {string} sid
     * @param {string} rid
     * @memberOf jsxc.xmpp
+    * @private
     */
    login: function() {
 
       if (jsxc.xmpp.conn && jsxc.xmpp.conn.authenticated) {
+         jsxc.debug('Connection already authenticated.');
          return;
       }
 
@@ -57,20 +61,35 @@ jsxc.xmpp = {
             if (sid !== null && rid !== null) {
                jid = jsxc.storage.getItem('jid');
             } else {
-               sid = null;
-               rid = null;
+               sid = jsxc.options.xmpp.sid || null;
+               rid = jsxc.options.xmpp.rid || null;
                jid = jsxc.options.xmpp.jid;
             }
       }
 
+      if (!jid) {
+         jsxc.warn('Jid required for login');
+
+         return;
+      }
+
+      if (!jsxc.bid) {
+         jsxc.bid = jsxc.jidToBid(jid);
+      }
+
       var url = jsxc.options.get('xmpp').url;
+
+      if (!url) {
+         jsxc.warn('xmpp.url required for login');
+
+         return;
+      }
 
       if (!(jsxc.xmpp.conn && jsxc.xmpp.conn.connected)) {
          // Register eventlistener
          $(document).on('connected.jsxc', jsxc.xmpp.connected);
          $(document).on('attached.jsxc', jsxc.xmpp.attached);
          $(document).on('disconnected.jsxc', jsxc.xmpp.disconnected);
-         $(document).on('ridChange', jsxc.xmpp.onRidChange);
          $(document).on('connfail.jsxc', jsxc.xmpp.onConnfail);
          $(document).on('authfail.jsxc', jsxc.xmpp.onAuthFail);
 
@@ -80,15 +99,6 @@ jsxc.xmpp = {
       // Create new connection (no login)
       jsxc.xmpp.conn = new Strophe.Connection(url);
 
-      // Override default function to preserve unique id
-      var stropheGetUniqueId = jsxc.xmpp.conn.getUniqueId;
-      jsxc.xmpp.conn.getUniqueId = function(suffix) {
-         var uid = stropheGetUniqueId.call(jsxc.xmpp.conn, suffix);
-         jsxc.storage.setItem('_uniqueId', jsxc.xmpp.conn._uniqueId);
-
-         return uid;
-      };
-
       if (jsxc.storage.getItem('debug') === true) {
          jsxc.xmpp.conn.xmlInput = function(data) {
             console.log('<', data);
@@ -97,6 +107,8 @@ jsxc.xmpp = {
             console.log('>', data);
          };
       }
+
+      jsxc.xmpp.conn.nextValidRid = jsxc.xmpp.onRidChange;
 
       var callback = function(status, condition) {
 
@@ -129,9 +141,12 @@ jsxc.xmpp = {
          jsxc.xmpp.conn.caps.node = 'http://jsxc.org/';
       }
 
-      if (jsxc.restore && sid && rid) {
+      if (sid && rid) {
          jsxc.debug('Try to attach');
          jsxc.debug('SID: ' + sid);
+
+         jsxc.reconnect = true;
+
          jsxc.xmpp.conn.attach(jid, sid, rid, callback);
       } else {
          jsxc.debug('New connection');
@@ -155,7 +170,7 @@ jsxc.xmpp = {
             }, Strophe.NS.CAPS);
          }
 
-         jsxc.xmpp.conn.connect(jid || jsxc.options.xmpp.jid, password || jsxc.options.xmpp.password, callback);
+         jsxc.xmpp.conn.connect(jid, password || jsxc.options.xmpp.password, callback);
       }
    },
 
@@ -173,7 +188,7 @@ jsxc.xmpp = {
       // clean up
       jsxc.storage.removeUserItem('buddylist');
       jsxc.storage.removeUserItem('windowlist');
-      jsxc.storage.removeItem('_uniqueId');
+      jsxc.storage.removeUserItem('unreadMsg');
 
       if (!jsxc.master) {
          $('#jsxc_roster').remove();
@@ -243,45 +258,27 @@ jsxc.xmpp = {
 
       jsxc.xmpp.conn.pause();
 
-      var nomJid = Strophe.getBareJidFromJid(jsxc.xmpp.conn.jid).toLowerCase() + '/' + Strophe.getResourceFromJid(jsxc.xmpp.conn.jid);
+      jsxc.xmpp.initNewConnection();
 
-      // Save sid and jid
-      jsxc.storage.setItem('sid', jsxc.xmpp.conn._proto.sid);
-      jsxc.storage.setItem('jid', nomJid);
-
-      jsxc.storage.setItem('lastActivity', (new Date()).getTime());
-
-      // make shure roster will be reloaded
-      jsxc.storage.removeUserItem('buddylist');
-
-      jsxc.storage.removeUserItem('windowlist');
-      jsxc.storage.removeUserItem('own');
-      jsxc.storage.removeUserItem('avatar', 'own');
-      jsxc.storage.removeUserItem('otrlist');
-      jsxc.storage.removeUserItem('unreadMsg');
-
-      // reset user options
-      jsxc.storage.removeUserElement('options', 'RTCPeerConfig');
+      jsxc.xmpp.saveSessionParameter();
 
       if (jsxc.options.loginForm.triggered) {
          switch (jsxc.options.loginForm.onConnected || 'submit') {
             case 'submit':
                jsxc.submitLoginForm();
-               /* falls through */
+               return;
             case false:
-               jsxc.xmpp.connectionReady();
                return;
          }
       }
 
       // start chat
 
-      jsxc.gui.init();
-      $('#jsxc_roster').removeClass('jsxc_noConnection');
-      jsxc.onMaster();
-      jsxc.xmpp.conn.resume();
       jsxc.gui.dialog.close();
-      jsxc.restoreCompleted = true;
+
+      jsxc.xmpp.conn.resume();
+      jsxc.onMaster();
+
       $(document).trigger('attached.jsxc');
    },
 
@@ -292,10 +289,14 @@ jsxc.xmpp = {
     */
    attached: function() {
 
+      $('#jsxc_roster').removeClass('jsxc_noConnection');
+
       jsxc.xmpp.conn.addHandler(jsxc.xmpp.onRosterChanged, 'jabber:iq:roster', 'iq', 'set');
       jsxc.xmpp.conn.addHandler(jsxc.xmpp.onMessage, null, 'message', 'chat');
       jsxc.xmpp.conn.addHandler(jsxc.xmpp.onReceived, null, 'message');
       jsxc.xmpp.conn.addHandler(jsxc.xmpp.onPresence, null, 'presence');
+
+      jsxc.gui.init();
 
       var caps = jsxc.xmpp.conn.caps;
       var domain = jsxc.xmpp.conn.domain;
@@ -335,7 +336,7 @@ jsxc.xmpp = {
       }
 
       // Only load roaster if necessary
-      if (!jsxc.restore || !jsxc.storage.getUserItem('buddylist')) {
+      if (!jsxc.reconnect || !jsxc.storage.getUserItem('buddylist')) {
          // in order to not overide existing presence information, we send
          // pres first after roster is ready
          $(document).one('cloaded.roster.jsxc', jsxc.xmpp.sendPres);
@@ -351,20 +352,42 @@ jsxc.xmpp = {
          jsxc.xmpp.conn.sendIQ(iq, jsxc.xmpp.onRoster);
       } else {
          jsxc.xmpp.sendPres();
+
+         if (!jsxc.restoreCompleted) {
+            jsxc.restoreRoster();
+            jsxc.restoreWindows();
+            jsxc.restoreCompleted = true;
+
+            $(document).trigger('restoreCompleted.jsxc');
+         }
       }
 
-      jsxc.xmpp.connectionReady();
+      jsxc.xmpp.saveSessionParameter();
+
+      jsxc.masterActions();
    },
 
-   /**
-    * Triggered if the connection is ready
-    */
-   connectionReady: function() {
+   saveSessionParameter: function() {
 
-      // Load saved unique id
-      jsxc.xmpp.conn._uniqueId = jsxc.storage.getItem('_uniqueId') || new Date().getTime();
+      var nomJid = Strophe.getBareJidFromJid(jsxc.xmpp.conn.jid).toLowerCase() + '/' + Strophe.getResourceFromJid(jsxc.xmpp.conn.jid);
 
-      $(document).trigger('connectionReady.jsxc');
+      // Save sid and jid
+      jsxc.storage.setItem('sid', jsxc.xmpp.conn._proto.sid);
+      jsxc.storage.setItem('jid', nomJid);
+   },
+
+   initNewConnection: function() {
+      // make shure roster will be reloaded
+      jsxc.storage.removeUserItem('buddylist');
+
+      jsxc.storage.removeUserItem('windowlist');
+      jsxc.storage.removeUserItem('own');
+      jsxc.storage.removeUserItem('avatar', 'own');
+      jsxc.storage.removeUserItem('otrlist');
+      jsxc.storage.removeUserItem('unreadMsg');
+
+      // reset user options
+      jsxc.storage.removeUserElement('options', 'RTCPeerConfig');
    },
 
    /**
@@ -408,9 +431,9 @@ jsxc.xmpp = {
    disconnected: function() {
       jsxc.debug('disconnected');
 
+      jsxc.storage.removeItem('jid');
       jsxc.storage.removeItem('sid');
       jsxc.storage.removeItem('rid');
-      jsxc.storage.removeItem('lastActivity');
       jsxc.storage.removeItem('hidden');
       jsxc.storage.removeUserItem('avatar', 'own');
       jsxc.storage.removeUserItem('otrlist');
@@ -418,7 +441,6 @@ jsxc.xmpp = {
       $(document).off('connected.jsxc', jsxc.xmpp.connected);
       $(document).off('attached.jsxc', jsxc.xmpp.attached);
       $(document).off('disconnected.jsxc', jsxc.xmpp.disconnected);
-      $(document).off('ridChange', jsxc.xmpp.onRidChange);
       $(document).off('connfail.jsxc', jsxc.xmpp.onConnfail);
       $(document).off('authfail.jsxc', jsxc.xmpp.onAuthFail);
 
@@ -438,6 +460,9 @@ jsxc.xmpp = {
       }
 
       window.clearInterval(jsxc.keepalive);
+      jsxc.role_allocation = false;
+      jsxc.master = false;
+      jsxc.storage.removeItem('alive');
    },
 
    /**
@@ -650,6 +675,19 @@ jsxc.xmpp = {
 
       // incoming friendship request
       if (ptype === 'subscribe') {
+         var bl = jsxc.storage.getUserItem('buddylist');
+
+         if (bl.indexOf(bid) > -1) {
+            jsxc.debug('Auto approve contact request, because he is already in our contact list.');
+
+            jsxc.xmpp.resFriendReq(jid, true);
+            if (data.sub !== 'to') {
+               jsxc.xmpp.addBuddy(jid, data.name);
+            }
+
+            return true;
+         }
+
          jsxc.storage.setUserItem('friendReq', {
             jid: jid,
             approve: -1
@@ -783,10 +821,17 @@ jsxc.xmpp = {
       stamp = stamp.getTime();
 
       if (carbon) {
-         var direction = (carbon.prop("tagName") === 'sent') ? 'out' : 'in';
+         var direction = (carbon.prop("tagName") === 'sent') ? jsxc.Message.OUT : jsxc.Message.IN;
          bid = jsxc.jidToBid((direction === 'out') ? $(message).attr('to') : from);
 
-         jsxc.gui.window.postMessage(bid, direction, body, false, forwarded, stamp);
+         jsxc.gui.window.postMessage({
+            bid: bid,
+            direction: direction,
+            msg: body,
+            encrypted: false,
+            forwarded: forwarded,
+            stamp: stamp
+         });
 
          return true;
 
@@ -853,7 +898,14 @@ jsxc.xmpp = {
             forwarded: forwarded
          });
       } else {
-         jsxc.gui.window.postMessage(bid, 'in', body, false, forwarded, stamp);
+         jsxc.gui.window.postMessage({
+            bid: bid,
+            direction: jsxc.Message.IN,
+            msg: body,
+            encrypted: false,
+            forwarded: forwarded,
+            stamp: stamp
+         });
       }
 
       // preserve handler
@@ -863,12 +915,11 @@ jsxc.xmpp = {
    /**
     * Triggerd if the rid changed
     * 
-    * @param {event} ev
-    * @param {obejct} data
+    * @param {integer} rid next valid request id
     * @private
     */
-   onRidChange: function(ev, data) {
-      jsxc.storage.setItem('rid', data.rid);
+   onRidChange: function(rid) {
+      jsxc.storage.setItem('rid', rid);
    },
 
    /**
@@ -950,27 +1001,14 @@ jsxc.xmpp = {
       jsxc.gui.roster.purge(bid);
    },
 
-   onReceived: function(message) {
-      var from = $(message).attr('from');
-      var jid = Strophe.getBareJidFromJid(from);
-      var bid = jsxc.jidToBid(jid);
-      var received = $(message).find("received[xmlns='urn:xmpp:receipts']");
+   onReceived: function(stanza) {
+      var received = $(stanza).find("received[xmlns='urn:xmpp:receipts']");
 
       if (received.length) {
-         var receivedId = received.attr('id').replace(/:/, '-');
-         var chat = jsxc.storage.getUserItem('chat', bid);
-         var i;
+         var receivedId = received.attr('id');
+         var message = new jsxc.Message(receivedId);
 
-         for (i = chat.length - 1; i >= 0; i--) {
-            if (chat[i].uid === receivedId) {
-               chat[i].received = true;
-
-               $('#' + receivedId).addClass('jsxc_received');
-
-               jsxc.storage.setUserItem('chat', bid, chat);
-               break;
-            }
-         }
+         message.received();
       }
 
       return true;

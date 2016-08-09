@@ -38,6 +38,8 @@
 
     .jsxc_more {
         margin-right: 6px;
+        z-index: 10;
+        position: relative;
     }
 
     .jsxc_options {
@@ -63,7 +65,7 @@
     }
 
     &.jsxc_hideOffline {
-        .jsxc_offline {
+        .jsxc_rosteritem[data-status='offline'] {
             display: none;
         }
     }

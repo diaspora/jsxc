@@ -24,6 +24,7 @@
 #jsxc_dialog {
     padding: 20px;
     min-width: 320px;
+    max-width: 100%;
     display: inline-block;
     text-align: left;
     position: relative;
@@ -81,11 +82,21 @@
     form {
         fieldset {
             margin-bottom: 30px;
-        }
-    }
+            padding: 0px 30px;
+            border: 1px solid #d9d9d9;
 
-    fieldset {
-        border-bottom: 1px solid #eee;
+            h3 {
+                font-size: 15px;
+                color: #000;
+                background-color: #f2f2f2;
+                padding: 10px;
+                margin: 0 -30px 10px -30px;
+            }
+        }
+
+        /*&.col-sm-6:nth-child(odd) {
+           clear: left;
+        }*/
     }
 
     legend {
@@ -127,7 +138,7 @@
         }
     }
 
-    .jsxc_libraries {
+    .jsxc_libraries, .jsxc_credits {
         max-width: 300px;
     }
 }
@@ -308,12 +319,26 @@ img.jsxc_vCard {
 .jsxc_btn {
     width: auto;
     min-width: 25px;
-    padding: 5px;
-    background-color: rgba(240, 240, 240, 0.9);
-    font-weight: bold;
-    color: #555;
-    border: 1px solid rgba(190, 190, 190, 0.9);
+    display: inline-block;
+    padding: 6px 12px;
+    margin: 0px 2px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.42857143;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
     cursor: pointer;
+    user-select: none;
+    background-image: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+
+    &.jsxc_btn-default {
+        border-color: #ccc;
+        color: #555;
+        background-color: rgba(240, 240, 240, 0.9);
+    }
 
     &.jsxc_btn-primary {
         color: #fff;
@@ -381,6 +406,20 @@ img.jsxc_vCard {
             text-decoration: none;
             opacity: 1.0;
         }
+
+        &.jsxc_disabled {
+            text-decoration: line-through;
+            opacity: 0.5;
+
+            &:hover {
+                text-decoration: line-through;
+                opacity: 0.5;
+            }
+
+            span {
+                cursor: default;
+            }
+        }
     }
 
     .jsxc_icon {
@@ -429,6 +468,10 @@ img.jsxc_vCard {
 
 .jsxc_groupcontacticon {
     background-image: image-url("groupcontact_black.svg");
+}
+
+.jsxc_bookmarkicon {
+    background-image: image-url("bookmark_black.svg");
 }
 
 .jsxc_more {

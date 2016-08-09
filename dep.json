@@ -1,7 +1,7 @@
 [
   {
      "name": "strophe.js",
-     "file": "lib/strophe.js",
+     "file": "lib/strophe.js/strophe.js",
      "license": "multiple",
      "url": "http://strophe.im/strophejs/"
   },
@@ -25,7 +25,7 @@
   },
   {
      "name": "strophe.js/vcard",
-     "file": "lib/strophe.vcard.js",
+     "file": "lib/strophe.vcard/index.js",
      "license": "MIT",
      "url": "https://github.com/strophe/strophejs-plugins"
   },
@@ -100,5 +100,11 @@
      "file": "lib/favico.js/favico.js",
      "license": "MIT",
      "url": "https://github.com/ejci/favico.js"
+  },
+  {
+     "name": "emoji one",
+     "file": "lib/emojione/lib/js/emojione.js",
+     "license": "CC-BY 4.0",
+     "url": "http://emojione.com"
   }
  ]

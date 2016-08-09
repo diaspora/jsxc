@@ -17,6 +17,7 @@ module.exports = function(grunt) {
       target: 'dev',
       jshint: {
          options: {
+            reporterOutput: "",
             jshintrc: '.jshintrc'
          },
          gruntfile: {
@@ -28,7 +29,7 @@ module.exports = function(grunt) {
          main: {
             files: [{
                expand: true,
-               src: ['lib/i18next/release/i18next-latest.min.js', 'lib/magnific-popup/dist/*.js', 'lib/favico.js/favico.js', 'lib/strophe.x/*.js', 'lib/strophe.bookmarks/*.js', 'lib/strophe.jinglejs/*-bundle.js', 'lib/otr/build/**', 'lib/otr/lib/dsa-webworker.js', 'lib/otr/lib/sm-webworker.js', 'lib/otr/lib/const.js', 'lib/otr/lib/helpers.js', 'lib/otr/lib/dsa.js', 'lib/otr/vendor/*.js', 'lib/*.js', 'LICENSE', 'img/**', 'sound/**'],
+               src: ['lib/i18next/release/i18next-latest.min.js', 'lib/magnific-popup/dist/*.js', 'lib/favico.js/favico.js', 'lib/emojione/lib/js/*.js', 'lib/emojione/assets/svg/*.svg', 'lib/strophe.js/strophe.js', 'lib/strophe.x/*.js', 'lib/strophe.bookmarks/*.js', 'lib/strophe.vcard/*.js', 'lib/strophe.jinglejs/*-bundle.js', 'lib/otr/build/**', 'lib/otr/lib/dsa-webworker.js', 'lib/otr/lib/sm-webworker.js', 'lib/otr/lib/const.js', 'lib/otr/lib/helpers.js', 'lib/otr/lib/dsa.js', 'lib/otr/vendor/*.js', 'lib/*.js', 'LICENSE', 'img/**', 'sound/**'],
                dest: '<%= target %>/'
             }, {
                expand: true,
@@ -392,7 +393,7 @@ module.exports = function(grunt) {
    grunt.registerTask('build:prerelease', 'Build a new pre-release', function() {
       grunt.config.set('target', 'build');
 
-      grunt.task.run(['search:console', 'build', 'dataUri', 'usebanner', 'replace:version', 'replace:libraries', 'replace:todo', 'uglify', 'compress']);
+      grunt.task.run(['search:console', 'build', 'usebanner', 'replace:version', 'replace:libraries', 'replace:todo', 'uglify', 'compress']);
    });
 
    grunt.registerTask('build:release', 'Build a new release', function() {

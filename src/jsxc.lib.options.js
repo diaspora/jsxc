@@ -37,6 +37,12 @@ jsxc.options = {
       /** XMPP password */
       password: null,
 
+      /** session id */
+      sid: null,
+
+      /** request id */
+      rid: null,
+
       /** True: Allow user to overwrite xmpp settings */
       overwrite: false,
 
@@ -52,6 +58,15 @@ jsxc.options = {
       xa: 0,
       dnd: 0
    },
+
+   /**
+    * This function is called if a login form was found, but before any 
+    * modification is done to it.
+    * 
+    * @memberOf jsxc.options
+    * @function
+    */
+   formFound: null,
 
    /** If all 3 properties are set and enable is true, the login form is used */
    loginForm: {
@@ -90,8 +105,23 @@ jsxc.options = {
        */
       onAuthFail: 'submit',
 
-      /** True: Attach connection even is login form was found */
+      /**
+       * True: Attach connection even is login form was found.
+       * 
+       * @type {Boolean}
+       * @deprecated since 3.0.0. Use now loginForm.ifFound (true => attach, false => pause)
+       */
       attachIfFound: true,
+
+      /**
+       * Describes what we should do if login form was found: 
+       * - Attach connection
+       * - Force new connection with loginForm.jid and loginForm.passed
+       * - Pause connection and do nothing
+       * 
+       * @type {(attach|force|pause)}
+       */
+      ifFound: 'attach',
 
       /**
        * True: Display roster minimized after first login. Afterwards the last 
@@ -123,9 +153,6 @@ jsxc.options = {
 
    /** Absolute path root of JSXC installation */
    root: '',
-
-   /** Timeout for restore in ms */
-   loginTimeout: 1000 * 60 * 10,
 
    /**
     * This function decides wether the roster will be displayed or not if no
@@ -173,10 +200,10 @@ jsxc.options = {
     * 
     * @memberOf jsxc.options
     * @param data Holds all data as key/value
-    * @returns {boolean} false if function failes
+    * @param cb Called with true on success, false otherwise
     */
-   saveSettinsPermanent: function() {
-
+   saveSettinsPermanent: function(data, cb) {
+      cb(true);
    },
 
    carbons: {
@@ -223,6 +250,9 @@ jsxc.options = {
       /** [optional] If set, jsxc requests and uses RTCPeerConfig from this url */
       url: null,
 
+      /** If true, jsxc send cookies when requesting RTCPeerConfig from the url above */
+      withCredentials: false,
+
       /** ICE servers like defined in http://www.w3.org/TR/webrtc/#idl-def-RTCIceServer */
       iceServers: [{
          urls: 'stun:stun.stunprotocol.org'
@@ -246,5 +276,7 @@ jsxc.options = {
             height: h
          };
       }
-   }
+   },
+
+   maxStorableSize: 1000000
 };
