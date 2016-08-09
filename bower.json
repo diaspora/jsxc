@@ -46,9 +46,7 @@
     "jquery-fullscreen-plugin": "~> 0.5.0",
     "emojione": "~2.0.1",
     "favico.js": "^0.3.10",
-    "strophe.bookmarks": "https://raw.githubusercontent.com/sualko/strophejs-plugins/bookmarks/bookmarks/strophe.bookmarks.js",
-    "strophe.js": "strophejs#a11ebefa3db1b6712d51d0d309b9f68f8e391d1b",
-    "strophe.vcard": "https://raw.githubusercontent.com/strophe/strophejs-plugins/2f07137ad2cbeaed41650ee46373c2f44e0f263a/vcard/strophe.vcard.js",
-    "strophe.x": "https://raw.githubusercontent.com/strophe/strophejs-plugins/master/dataforms/src/strophe.x.js"
+    "strophejs-plugins": "https://github.com/sualko/strophejs-plugins.git#^0.0.4",
+    "strophe.js": "strophejs#^1.2.7"
   }
 }
