@@ -47,6 +47,6 @@
     "emojione": "~2.0.1",
     "favico.js": "^0.3.10",
     "strophejs-plugins": "https://github.com/sualko/strophejs-plugins.git#^0.0.4",
-    "strophe.js": "strophejs#^1.2.7"
+    "strophejs": "strophejs#^1.2.7"
   }
 }
