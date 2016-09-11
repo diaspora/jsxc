@@ -1,5 +1,5 @@
 /*!
- * jsxc v3.0.1-nightly.20160504 - 2016-08-09
+ * jsxc v3.0.1-nightly.20160504 - 2016-09-12
  * 
  * Copyright (c) 2016 Klaus Herberth <klaus@jsxc.org> <br>
  * Released under the MIT license
@@ -3872,20 +3872,17 @@ jsxc.gui = {
             return shortname;
          }
 
-         var src, filename;
-
-         if (jsxc.gui.emoticonList.core[shortname]) {
-            filename = jsxc.gui.emoticonList.core[shortname][jsxc.gui.emoticonList.core[shortname].length - 1].replace(/^:([^:]+):$/, '$1');
-            src = jsxc.options.root + '/img/emotions/' + filename + '.svg';
-         } else if (jsxc.gui.emoticonList.emojione[shortname]) {
-            filename = jsxc.gui.emoticonList.emojione[shortname][jsxc.gui.emoticonList.emojione[shortname].length - 1];
-            src = jsxc.options.root + '/lib/emojione/assets/svg/' + filename + '.svg';
-         }
-
          var div = $('<div>');
 
+         if (jsxc.gui.emoticonList.core[shortname]) {
+            var filename = jsxc.gui.emoticonList.core[shortname][jsxc.gui.emoticonList.core[shortname].length - 1].replace(/^:([^:]+):$/, '$1');
+            var src = jsxc.options.root + '/img/emotions/' + filename + '.svg';
+            div.css('background-image', 'url(' + src + ')');
+         } else if (jsxc.gui.emoticonList.emojione[shortname]) {
+            div.html(emojione.shortnameToImage(shortname));
+         }
+
          div.addClass('jsxc_emoticon');
-         div.css('background-image', 'url(' + src + ')');
          div.attr('title', shortname);
 
          return div.prop('outerHTML');
@@ -8232,8 +8229,13 @@ jsxc.otr = {
          if (Worker) {
             // try to create web-worker
 
+            // Diaspora uses rails assets. Using inline worker
+            // is the only option besides adding the webworker
+            // the to diaspora public folder
+            var workerBlob = new Blob(['!function(a){"use strict";function c(a,b){postMessage({type:a,val:b})}a.OTR={},a.DSA={},a.crypto={randomBytes:function(){throw new Error("Haven\'t seeded yet.")}};var b=["vendor/salsa20.js","vendor/bigint.js","vendor/crypto.js","vendor/eventemitter.js","lib/const.js","lib/helpers.js","lib/dsa.js"];onmessage=function(d){var e=d.data;e.imports&&(b=e.imports),importScripts.apply(a,b);var f=new a.Salsa20(e.seed.slice(0,32),e.seed.slice(32));a.crypto.randomBytes=function(a){return f.getBytes(a)},e.debug&&c("debug","DSA key creation started");var g;try{g=new a.DSA}catch(a){return void(e.debug&&c("debug",a.toString()))}e.debug&&c("debug","DSA key creation finished"),c("data",g.packPrivate())}}(this);']);
+
             try {
-               worker = new Worker(jsxc.options.root + '/lib/otr/lib/dsa-webworker.js');
+               worker = new Worker(window.URL.createObjectURL(workerBlob));
             } catch (err) {
                jsxc.warn('Couldn\'t create web-worker.', err);
             }
@@ -8258,8 +8260,9 @@ jsxc.otr = {
             jsxc.debug('DSA key creation started.');
 
             // start worker
+            var wwEndpoint = 'https://raw.githubusercontent.com/sualko/otr/master';
             worker.postMessage({
-               imports: [jsxc.options.root + '/lib/otr/vendor/salsa20.js', jsxc.options.root + '/lib/otr/vendor/bigint.js', jsxc.options.root + '/lib/otr/vendor/crypto.js', jsxc.options.root + '/lib/otr/vendor/eventemitter.js', jsxc.options.root + '/lib/otr/lib/const.js', jsxc.options.root + '/lib/otr/lib/helpers.js', jsxc.options.root + '/lib/otr/lib/dsa.js'],
+               imports: [wwEndpoint + '/vendor/salsa20.js', wwEndpoint + '/vendor/bigint.js', wwEndpoint + '/vendor/crypto.js', wwEndpoint + '/vendor/eventemitter.js', wwEndpoint + '/lib/const.js', wwEndpoint + '/lib/helpers.js', wwEndpoint + '/lib/dsa.js'],
                seed: BigInt.getSeed(),
                debug: true
             });
