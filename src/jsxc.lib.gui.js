@@ -1438,20 +1438,17 @@ jsxc.gui = {
             return shortname;
          }
 
-         var src, filename;
-
-         if (jsxc.gui.emoticonList.core[shortname]) {
-            filename = jsxc.gui.emoticonList.core[shortname][jsxc.gui.emoticonList.core[shortname].length - 1].replace(/^:([^:]+):$/, '$1');
-            src = jsxc.options.root + '/img/emotions/' + filename + '.svg';
-         } else if (jsxc.gui.emoticonList.emojione[shortname]) {
-            filename = jsxc.gui.emoticonList.emojione[shortname][jsxc.gui.emoticonList.emojione[shortname].length - 1];
-            src = jsxc.options.root + '/lib/emojione/assets/svg/' + filename + '.svg';
-         }
-
          var div = $('<div>');
 
+         if (jsxc.gui.emoticonList.core[shortname]) {
+            var filename = jsxc.gui.emoticonList.core[shortname][jsxc.gui.emoticonList.core[shortname].length - 1].replace(/^:([^:]+):$/, '$1');
+            var src = jsxc.options.root + '/img/emotions/' + filename + '.svg';
+            div.css('background-image', 'url(' + src + ')');
+         } else if (jsxc.gui.emoticonList.emojione[shortname]) {
+            div.html(emojione.shortnameToImage(shortname));
+         }
+
          div.addClass('jsxc_emoticon');
-         div.css('background-image', 'url(' + src + ')');
          div.attr('title', shortname);
 
          return div.prop('outerHTML');

@@ -32,6 +32,7 @@
     "tmp",
     "locales/",
     "build/img/",
+    "build/lib/emojione/assets/",
     "example/",
     "doc/",
     "dev/",

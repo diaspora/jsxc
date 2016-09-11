@@ -221,7 +221,7 @@ module.exports = function(grunt) {
             dest: '<%= target %>/css/',
             options: {
                target: ['<%= target %>/img/*.*', '<%= target %>/img/**/*.*'],
-               fixDirLevel: false
+               fixDirLevel: true
             }
          }
       },
@@ -400,6 +400,12 @@ module.exports = function(grunt) {
       grunt.config.set('target', 'build');
 
       grunt.task.run(['search:changelog', 'build:prerelease', 'jsdoc']);
+   });
+
+   grunt.registerTask('build:diaspora', 'Build a new diaspora release', function() {
+      grunt.config.set('target', 'build');
+
+      grunt.task.run(['build:prerelease', 'dataUri']);
    });
 
    // Create alpha/beta build @deprecated
