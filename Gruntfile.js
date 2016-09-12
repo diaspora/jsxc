@@ -153,7 +153,7 @@ module.exports = function(grunt) {
                }
             },
             src: dep_files,
-            dest: '<%= target %>/lib/jsxc.dep.js'
+            dest: '<%= target %>/jsxc.dep.js'
          },
          jsxc: {
             options: {
@@ -171,7 +171,7 @@ module.exports = function(grunt) {
                preserveComments: 'some'
             },
             files: {
-               '<%= target %>/lib/jsxc.dep.min.js': ['<%= target %>/lib/jsxc.dep.js'],
+               '<%= target %>/jsxc.dep.min.js': ['<%= target %>/jsxc.dep.js'],
                '<%= target %>/jsxc.min.js': ['<%= target %>/jsxc.js']
             }
          }

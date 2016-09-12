@@ -5,10 +5,9 @@
     "sualko <klaus@jsxc.org>"
   ],
   "main": [
-    "build/lib/jsxc.dep.js",
+    "build/jsxc.dep.min.js",
     "build/jsxc.min.js",
-    "build/css/jsxc.css",
-    "build/css/jsxc.webrtc.css"
+    "build/css/jsxc.css"
   ],
   "description": "Real-time chat app",
   "keywords": [
@@ -29,14 +28,11 @@
     "sound/",
     "scss/",
     "template/",
-    "tmp",
     "locales/",
     "build/img/",
-    "build/lib/emojione/assets/",
+    "build/lib/",
     "example/",
     "doc/",
-    "dev/",
-    "archives/",
     "test/"
   ],
   "dependencies": {
