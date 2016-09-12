@@ -2122,7 +2122,7 @@ jsxc.gui.window = {
 
       win.find('.jsxc_name').disableSelection();
 
-      /*win.find('.slimScrollDiv').resizable({
+      win.find('.slimScrollDiv').resizable({
          handles: 'w, nw, n',
          minHeight: 234,
          minWidth: 250,
@@ -2135,7 +2135,7 @@ jsxc.gui.window = {
          stop: function() {
             win.addClass('jsxc_normal');
          }
-      });*/
+      });
 
       win.find('.jsxc_window').css('bottom', -1 * win.find('.jsxc_fade').height());
 

@@ -1074,7 +1074,7 @@ jsxc.gui.showVideoWindow = function(jid) {
 
    var win = jsxc.gui.window.open(jsxc.jidToBid(jid));
 
-   win.find('.slimScrollDiv').resizable('disable');
+   win.find('.slimScrollDiv').resizable({disabled: true});
    jsxc.gui.window.resize(win, {
       size: {
          width: $('#jsxc_webrtc .jsxc_chatarea').width(),
