@@ -221,7 +221,17 @@ jsxc.notification = {
       // stop current audio file
       jsxc.notification.stopSound();
 
-      var audio = new Audio(jsxc.options.root + '/sound/' + soundFile);
+      var audio;
+      switch (soundFile) {
+        case "incomingMessage.wav":
+          audio = jsxcIncomingMessageB64;
+          break;
+        case "Rotary-Phone6.mp3":
+          audio = jsxcRotaryPhoneB64;
+          break;
+        default:
+          audio = jsxcPing1B64;
+      }
       audio.loop = loop || false;
       audio.play();
 

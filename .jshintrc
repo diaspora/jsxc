@@ -35,6 +35,9 @@
       "getUserMediaWithConstraints":true,
       "setupRTC":true,
       "SDPUtil":true,
-      "getSelection":true
+      "getSelection":true,
+      "jsxcIncomingMessageB64":true,
+      "jsxcRotaryPhoneB64":true,
+      "jsxcPing1B64":true
    }
 }

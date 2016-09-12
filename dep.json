@@ -106,5 +106,23 @@
      "file": "lib/emojione/lib/js/emojione.js",
      "license": "CC-BY 4.0",
      "url": "http://emojione.com"
+  },
+  {
+     "name": null,
+     "file": "sound/incomingMessage.js",
+     "license": "sound/credentials",
+     "url": null
+  },
+  {
+     "name": null,
+     "file": "sound/Rotary-Phone6.js",
+     "license": "sound/credentials",
+     "url": null
+  },
+  {
+     "name": null,
+     "file": "sound/Ping1.js",
+     "license": "sound/credentials",
+     "url": null
   }
  ]
