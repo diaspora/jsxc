@@ -13,3 +13,6 @@
 [submodule "lib/strophe.jinglejs"]
 	path = lib/strophe.jinglejs
 	url = https://github.com/sualko/strophe.jinglejs
+[submodule "lib/emojione"]
+	path = lib/emojione
+	url = https://github.com/Ranks/emojione.git
